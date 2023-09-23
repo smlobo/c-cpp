@@ -8,6 +8,9 @@
 
 int main(int argc, char* argv[])
 {
+  // Sheldon: generate unused warning
+  int x = 100;
+
   if (argc < 2) {
     // report version
     std::cout << argv[0] << " Version " << Tutorial_VERSION_MAJOR << "."
