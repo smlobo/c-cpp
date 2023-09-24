@@ -15,7 +15,7 @@ target_compile_features(tutorial_compiler_flags INTERFACE cxx_std_11)
 #   any of the following compilers: ARMClang, AppleClang, Clang, GNU, LCC
 # * Create a new variable msvc_cxx that is true if we are using CXX and MSVC
 # Hint: Use set() and COMPILE_LANG_AND_ID
-message(STATUS "Sheldon: checking compiler id: ${CMAKE_CXX_COMPILER_ID}")
+message(STATUS "Sheldon: compiler id: ${CMAKE_CXX_COMPILER_ID}")
 if (${CMAKE_CXX_COMPILER_ID} STREQUAL "ARMClang" OR
         ${CMAKE_CXX_COMPILER_ID} STREQUAL "AppleClang" OR
         ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang" OR
