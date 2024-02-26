@@ -54,3 +54,7 @@ dkms.conf
 # IntelliJ
 .idea
 
+# CMake build
+build*
+CMakeUserPresets.json
+

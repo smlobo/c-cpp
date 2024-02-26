@@ -22,3 +22,7 @@ add_executable(Tutorial tutorial.cxx)
 
 # TODO 9: Use target_include_directories to include ${PROJECT_BINARY_DIR}
 target_include_directories(Tutorial PUBLIC "${PROJECT_BINARY_DIR}")
+
+message(STATUS "Sheldon: Host cpu: ${HOST_CPU}")
+message(STATUS "Sheldon: Project src dir: ${PROJECT_SOURCE_DIR}")
+
