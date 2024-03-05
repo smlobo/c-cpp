@@ -48,15 +48,20 @@ int main(int argc, char **argv) {
 
     // Event loop
     SDL_Event event;
+    bool firstTime = true;
     while (event.type != SDL_QUIT) {
         SDL_WaitEvent(&event);
 
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
-        SDL_RenderClear(renderer);
+        if (firstTime || (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_SPACE)) {
+            SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
+            SDL_RenderClear(renderer);
 
-        HTree(renderer, depth, windowSize/2, windowSize/2, windowSize/2);
+            HTree(renderer, depth, windowSize/2, windowSize/2, windowSize/2);
 
-        SDL_RenderPresent(renderer);
+            SDL_RenderPresent(renderer);
+
+            firstTime = false;
+        }
     }
 
     SDL_DestroyRenderer(renderer);
