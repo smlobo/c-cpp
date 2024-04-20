@@ -8,5 +8,6 @@
 #include <SDL.h>
 
 void DrawCircle(SDL_Renderer *renderer, int centreX, int centreY, int diameter);
+void DrawCircleFill(SDL_Renderer *renderer, int centreX, int centreY, int diameter);
 
 #endif //MAP_ROUTING_SDL_HELPERS_H

@@ -11,6 +11,7 @@ add_executable(${PROJECT_NAME}
         src/draw.cpp
         src/Graph.cpp
         src/Node.cpp
+        src/Edge.cpp
         src/SDL-Helpers.cpp)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE SDL2::SDL2main SDL2::SDL2-static SDL2_ttf::SDL2_ttf-static)

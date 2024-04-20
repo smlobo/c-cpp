@@ -6,13 +6,11 @@
 #define MAP_ROUTING_NODE_H
 
 class Node {
-private:
+public:
     int id;
     int x;
     int y;
-    friend class Graph;
 
-public:
     Node(int id, int x, int y) :
         id(id), x(x), y(y) {};
     friend std::ostream& operator<<(std::ostream&, const Node&);

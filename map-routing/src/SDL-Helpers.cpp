@@ -17,6 +17,21 @@ void DrawCircle(SDL_Renderer *renderer, int x, int y, int r)
     }
 }
 
+void DrawCircleFill(SDL_Renderer *renderer, int x, int y, int r)
+{
+    static const double PI = 3.1415926535;
+    double i, angle, x1, y1;
+
+    for (i = 0; i < 360; i += 0.1) {
+        angle = i;
+        for (int j = 1; j < r; j++) {
+            x1 = j * cos(angle * PI / 180);
+            y1 = j * sin(angle * PI / 180);
+            SDL_RenderDrawPoint(renderer, x + x1, y + y1);
+        }
+    }
+}
+
 void DrawCircleOld(SDL_Renderer *renderer, int centreX, int centreY, int diameter)
 {
     const int radius = diameter / 2;

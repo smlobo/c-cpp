@@ -14,12 +14,13 @@
 #include <SDL2/SDL_ttf.h>
 
 #include "Node.h"
+#include "Edge.h"
 
 class Graph {
 private:
     std::vector<Node> vertices;
     int nEdges;
-    std::vector<std::forward_list<int>> adj;
+    std::vector<std::forward_list<Edge>> adj;
     int source;
     int destination;
 
@@ -33,7 +34,7 @@ private:
 public:
     explicit Graph(std::ifstream& file);
     void addEdge(int v1, int v2);
-    std::forward_list<int>& getAdjacents(int v);
+    std::forward_list<Edge> & getAdjacents(int v);
     void draw(SDL_Renderer *renderer, int windowSize);
     int xScaled(int n) const;
     int yScaled(int n) const;

@@ -10,6 +10,7 @@
 
 Graph::Graph(std::ifstream& file) {
     std::string line;
+    std::string src, dest;
 
     maxXCoord = maxYCoord = 0;
 
@@ -17,8 +18,7 @@ Graph::Graph(std::ifstream& file) {
     getline(file, line);
     std::istringstream ss(line);
     std::string verticesString, edgesString;
-    ss >> verticesString;
-    ss >> edgesString;
+    ss >> verticesString >> edgesString;
     int nVertices = std::stoi(verticesString);
     nEdges = std::stoi(edgesString);
 
@@ -31,46 +31,67 @@ Graph::Graph(std::ifstream& file) {
         getline(file, line);
 
         // Skip empty lines
-        while (line == "")
+        while (line.empty())
             getline(file, line);
 
-        std::istringstream ss(line);
+        ss.clear();
+        ss.str(line);
         std::string idString, xString, yString;
-        ss >> idString;
-        ss >> xString;
-        ss >> yString;
+        ss >> idString >> xString >> yString;
         int x = std::stoi(xString);
         int y = std::stoi(yString);
         maxXCoord = std::max(maxXCoord, x);
         maxYCoord = std::max(maxYCoord, y);
-        vertices.push_back(Node(std::stoi(idString), x, y));
+        vertices.emplace_back(std::stoi(idString), x, y);
     }
 
     // Build the adjacency vector for each vertex
-    adj = std::vector<std::forward_list<int>>(vertices.size(), std::forward_list<int>());
+    adj = std::vector<std::forward_list<Edge>>(vertices.size(), std::forward_list<Edge>());
 
     // Read the edges
     for (int i = 0; i < nEdges; i++) {
         getline(file, line);
 
         // Skip empty lines
-        while (line == "")
+        while (line.empty())
             getline(file, line);
 
-        std::istringstream ss(line);
-        std::string src, dest;
-        ss >> src;
-        ss >> dest;
+        ss.clear();
+        ss.str(line);
+        ss >> src >> dest;
         addEdge(stoi(src), stoi(dest));
+    }
+
+    // Read the source and destination
+    getline(file, line);
+    while (line.empty()) {
+        getline(file, line);
+        if (file.eof())
+            break;
+    }
+    if (!file.eof()) {
+        ss.clear();
+        ss.str(line);
+        ss >> src >> dest;
+        source = stoi(src);
+        destination = stoi(dest);
+        std::cout << "Graph src/dest : " << source << ", " << destination << std::endl;
+    } else {
+        std::cout << "No graph src/dest ... ";
+        std::cin >> src >> dest;
+        source = stoi(src);
+        destination = stoi(dest);
+        std::cout << "Input src/dest : " << source << ", " << destination << std::endl;
     }
 }
 
 void Graph::addEdge(int v1, int v2) {
-    adj[v1].push_front(v2);
-    adj[v2].push_front(v1);
+    Edge edge(&vertices[v1], &vertices[v2]);
+    adj[v1].push_front(edge);
+    adj[v2].push_front(edge);
 }
 
-std::forward_list<int>& Graph::getAdjacents(int v) {
+std::forward_list<Edge> & Graph::getAdjacents(int v) {
     return adj[v];
 }
 
@@ -83,8 +104,8 @@ std::ostream& operator<<(std::ostream& strm, const Graph& g) {
 
     for (int i = 0; i < g.adj.size(); i++) {
         strm << i << " [ ";
-        for (int dest : g.adj[i]) {
-            strm << dest << ", ";
+        for (Edge edge : g.adj[i]) {
+            strm << edge << ", ";
         }
         strm << "]" << std::endl;
     }
@@ -110,7 +131,10 @@ void Graph::draw(SDL_Renderer *renderer, int windowSize) {
     for (Node node : vertices) {
         int x = xScaled(node.x);
         int y = yScaled(node.y);
-        DrawCircle(renderer, x, y, 14);
+        if (node.id == source || node.id == destination)
+            DrawCircleFill(renderer, x, y, 14);
+        else
+            DrawCircle(renderer, x, y, 14);
 
         // Write id in circle
         std::string idString = std::to_string(node.id);
@@ -132,16 +156,13 @@ void Graph::draw(SDL_Renderer *renderer, int windowSize) {
     // Draw edges
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
     for (int i = 0; i < vertices.size(); i++) {
-        Node src = vertices[i];
-        std::forward_list<int> adj = getAdjacents(i);
-        for (int j : adj) {
-            Node dest = vertices[j];
-
+        std::forward_list<Edge> adj = getAdjacents(i);
+        for (Edge edge : adj) {
             // Need to end edge outside the vertex circle
-            int srcX = xScaled(src.x);
-            int srcY = yScaled(src.y);
-            int destX = xScaled(dest.x);
-            int destY = yScaled(dest.y);
+            int srcX = xScaled(edge.src->x);
+            int srcY = yScaled(edge.src->y);
+            int destX = xScaled(edge.dest->x);
+            int destY = yScaled(edge.dest->y);
             if (srcX < destX) {
                 srcX += 7;
                 destX -= 7;
