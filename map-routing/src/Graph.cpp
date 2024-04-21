@@ -189,3 +189,19 @@ int Graph::xScaled(int n) const {
 int Graph::yScaled(int n) const {
     return static_cast<int>((maxYCoord - n) * yScale) + offset;
 }
+
+size_t Graph::numVertices() {
+    return vertices.size();
+}
+
+int Graph::getSource() {
+    return source;
+}
+
+int Graph::getDestination() {
+    return destination;
+}
+
+std::forward_list<Edge> Graph::adjacents(int v) {
+    return adj[v];
+}

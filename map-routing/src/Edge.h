@@ -16,6 +16,7 @@ public:
     double distance;
     friend class Node;
 
+    Edge();
     Edge(Node *s, Node *d);
 
     friend std::ostream& operator<<(std::ostream&, const Edge&);

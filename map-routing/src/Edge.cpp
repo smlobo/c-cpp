@@ -7,6 +7,9 @@
 
 #include "Edge.h"
 
+Edge::Edge() :
+    src(nullptr), dest(nullptr), distance(-1.0) {}
+
 Edge::Edge(Node *s, Node *d) :
     src(s), dest(d) {
     distance = std::sqrt(std::pow(std::abs(src->x - dest->x), 2) +

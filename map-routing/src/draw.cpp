@@ -6,8 +6,9 @@
 #include <fstream>
 
 #include "Graph.h"
+#include "DijkstraSP.h"
 
-const int windowSize = 800;
+const int windowSize = 1000;
 
 int main(int argc, char **argv) {
     // Usage
@@ -25,6 +26,16 @@ int main(int argc, char **argv) {
     }
     Graph g = Graph(inputFile);
     std::cout << "Graph:\n" << g;
+
+    // Calculate the shortest path
+    DijkstraSP shortestPath = DijkstraSP(g);
+    std::list<Edge> sp;
+    shortestPath.shortestPath(sp, g.getDestination());
+    std::cout << "Shortest path: " << g.getSource() << " -> ";
+    for (Edge e : sp) {
+        std::cout << e.dest->id << " -> ";
+    }
+    std::cout << "\n";
 
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         std::cout << "SSDL_Init Error: " << SDL_GetError() << std::endl;
@@ -56,6 +67,31 @@ int main(int argc, char **argv) {
             SDL_RenderClear(renderer);
 
             g.draw(renderer, windowSize);
+
+            // Highlight the shortest path in green
+            SDL_SetRenderDrawColor(renderer, 0, 255, 0, SDL_ALPHA_OPAQUE);
+            for (Edge edge : sp) {
+                // Need to end edge outside the vertex circle
+                int srcX = g.xScaled(edge.src->x);
+                int srcY = g.yScaled(edge.src->y);
+                int destX = g.xScaled(edge.dest->x);
+                int destY = g.yScaled(edge.dest->y);
+                if (srcX < destX) {
+                    srcX += 7;
+                    destX -= 7;
+                } else {
+                    srcX -= 7;
+                    destX += 7;
+                }
+                if (srcY < destY) {
+                    srcY += 7;
+                    destY -= 7;
+                } else {
+                    srcY -= 7;
+                    destY += 7;
+                }
+                SDL_RenderDrawLine(renderer, srcX, srcY, destX, destY);
+            }
 
             SDL_RenderPresent(renderer);
 

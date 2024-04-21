@@ -33,11 +33,19 @@ private:
 
 public:
     explicit Graph(std::ifstream& file);
+
+    size_t numVertices();
+    int getSource();
+    int getDestination();
+    std::forward_list<Edge> adjacents(int v);
+
     void addEdge(int v1, int v2);
     std::forward_list<Edge> & getAdjacents(int v);
+
     void draw(SDL_Renderer *renderer, int windowSize);
     int xScaled(int n) const;
     int yScaled(int n) const;
+
     friend std::ostream& operator<<(std::ostream&, const Graph&);
 };
 
