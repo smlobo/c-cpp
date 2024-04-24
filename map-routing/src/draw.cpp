@@ -8,7 +8,7 @@
 #include "Graph.h"
 #include "DijkstraSP.h"
 
-const int windowSize = 1000;
+const int windowSize = 1050;
 
 int main(int argc, char **argv) {
     // Usage
@@ -32,10 +32,13 @@ int main(int argc, char **argv) {
     std::list<Edge> sp;
     shortestPath.shortestPath(sp, g.getDestination());
     std::cout << "Shortest path: " << g.getSource() << " -> ";
+    double shortestDistance = 0.0;
     for (Edge e : sp) {
         std::cout << e.dest->id << " -> ";
+        shortestDistance += e.distance;
     }
     std::cout << "\n";
+    std::cout << "Shortest distance: " << std::fixed << std::setprecision(4) << shortestDistance << "\n";
 
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         std::cout << "SSDL_Init Error: " << SDL_GetError() << std::endl;

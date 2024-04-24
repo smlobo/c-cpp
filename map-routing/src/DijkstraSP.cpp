@@ -4,13 +4,18 @@
 
 #include "DijkstraSP.h"
 
+bool LowestDoubleComparator::operator()(const std::pair<int, double> &a, const std::pair<int, double> &b) {
+    return a.second > b.second;
+}
+
 DijkstraSP::DijkstraSP(Graph &g) {
     source = g.getSource();
 
     edgeTo = std::vector<Edge>(g.numVertices());
     distTo = std::vector<double>(g.numVertices());
 
-    std::priority_queue<std::pair<int, double>> pq;
+    std::priority_queue<std::pair<int, double>, std::vector<std::pair<int, double>>,
+            LowestDoubleComparator> pq;
 
     for (int i = 0; i < g.numVertices(); i++) {
         distTo[i] = DBL_MAX;
@@ -28,7 +33,8 @@ DijkstraSP::DijkstraSP(Graph &g) {
     }
 }
 
-void DijkstraSP::relax(Edge &e, std::priority_queue<std::pair<int, double>> &pq) {
+void DijkstraSP::relax(Edge &e, std::priority_queue<std::pair<int, double>,
+        std::vector<std::pair<int, double>>, LowestDoubleComparator> &pq) {
     int s = e.src->id;
     int d = e.dest->id;
 
@@ -47,4 +53,3 @@ void DijkstraSP::shortestPath(std::list<Edge> &sp, int d) {
         v = e.src->id;
     }
 }
-
