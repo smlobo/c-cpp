@@ -1,6 +1,6 @@
 [requires]
 libcurl/8.8.0
-jsoncpp/1.9.5
+taocpp-json/1.0.0-beta.14
 
 [generators]
 CMakeDeps

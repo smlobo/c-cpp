@@ -1,10 +1,8 @@
 #include <iostream>
 #include <unordered_map>
-#include <map>
-#include <string>
 #include <curl/curl.h>
-#include <json/value.h>
-#include <json/reader.h>
+#include <tao/json.hpp>
+#include <tao/json/contrib/traits.hpp>
 
 const std::string API_KEY = "&key=fee00b0d52c7cd8f170a09ce4785218a70523396";
 const std::string COUNTRIES = "&for=genc+standard+countries+and+areas:US,CN,IN";
@@ -73,48 +71,9 @@ int main() {
 
     curl_global_cleanup();
 
-    // Parse with json cpp
-    Json::Value root;
-    Json::Reader reader;
-    reader.parse(chunk.memory, root);
-
-    // JSON to our map
-    std::unordered_map<unsigned, std::map<std::string, unsigned>> yearCountryMap;
-    // Skip the 0 index - this is the title
-    for (Json::Value::ArrayIndex i = 1; i != root.size(); i++) {
-        Json::Value element = root[i];
-        std::cout << "[" << i << "] ";
-        for (const Json::Value &j : element) {
-            std::cout << j.asString() << ", ";
-        }
-        std::cout << std::endl;
-
-        // 0 -> Country Name, 1 -> Population, 2 -> Year
-        unsigned year = std::stoi(element[2].asString());
-        std::map<std::string, unsigned> &countryMap = yearCountryMap[year];
-        countryMap[element[0].asString()] = std::stoi(element[1].asString());
-
-    }
-
-    // Pretty print
-    std::cout << "Population:\n";
-    bool title = false;
-    for (const std::pair<const unsigned, std::map<std::string, unsigned>>& yearElement : yearCountryMap) {
-        // Print the country title
-        if (!title) {
-            std::cout << "\t";
-            for (std::pair<const std::string, unsigned> countryElement : yearElement.second) {
-                std::cout << countryElement.first << "\t\t";
-            }
-            std::cout << "\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
-            title = true;
-        }
-        std::cout << yearElement.first << "\t";
-        for (std::pair<const std::string, unsigned> countryElement : yearElement.second) {
-            std::cout << countryElement.second << "\t";
-        }
-        std::cout << "\n";
-    }
+    // Parse the JSON
+    const tao::json::value v = tao::json::from_string(chunk.memory);
+    std::cout << std::setw( 2 ) << v << std::endl;  // Pretty-printed with indent 2.
 
     return 0;
 }
