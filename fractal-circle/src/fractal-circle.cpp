@@ -3,9 +3,13 @@
 //
 
 #include <cmath>
+#include <iostream>
 #include <SDL.h>
 
 #include "utilities.h"
+
+static int prevCircles = 0;
+static int currCircles = 0;
 
 void DrawCircle(SDL_Renderer * renderer, int centreX, int centreY, int diameter)
 {
@@ -28,6 +32,15 @@ void DrawCircle(SDL_Renderer * renderer, int centreX, int centreY, int diameter)
         SDL_RenderDrawPoint(renderer, centreX + y, centreY + x);
         SDL_RenderDrawPoint(renderer, centreX - y, centreY - x);
         SDL_RenderDrawPoint(renderer, centreX - y, centreY + x);
+        // Make it 2 pixels
+        SDL_RenderDrawPoint(renderer, centreX + x + 1, centreY - y);
+        SDL_RenderDrawPoint(renderer, centreX + x + 1, centreY + y);
+        SDL_RenderDrawPoint(renderer, centreX - x - 1, centreY - y);
+        SDL_RenderDrawPoint(renderer, centreX - x - 1, centreY + y);
+        SDL_RenderDrawPoint(renderer, centreX + y, centreY - x - 1);
+        SDL_RenderDrawPoint(renderer, centreX + y, centreY + x + 1);
+        SDL_RenderDrawPoint(renderer, centreX - y, centreY - x - 1);
+        SDL_RenderDrawPoint(renderer, centreX - y, centreY + x + 1);
 
         if (error <= 0)
         {
@@ -43,6 +56,12 @@ void DrawCircle(SDL_Renderer * renderer, int centreX, int centreY, int diameter)
             error += (tx - diameter);
         }
     }
+
+    // Draw just 1 more circle than previous
+    currCircles++;
+    if (currCircles > prevCircles) {
+        throw std::exception();
+    }
 }
 
 void FractalCircle(SDL_Renderer *renderer, int depth, int centerX, int centerY, int diameter) {
@@ -50,7 +69,8 @@ void FractalCircle(SDL_Renderer *renderer, int depth, int centerX, int centerY, 
     if (depth == 0)
         return;
 
-    SDL_SetRenderDrawColor(renderer, randomInt(0, 256), randomInt(0, 256), randomInt(0, 256), SDL_ALPHA_OPAQUE);
+    // SDL_SetRenderDrawColor(renderer, randomInt(0, 256), randomInt(0, 256), randomInt(0, 256), SDL_ALPHA_OPAQUE);
+    SDL_SetRenderDrawColor(renderer, 255, 0, 0, SDL_ALPHA_OPAQUE);
 
     // Draw circle
     DrawCircle(renderer, centerX, centerY, diameter);
@@ -76,4 +96,24 @@ void FractalCircle(SDL_Renderer *renderer, int depth, int centerX, int centerY, 
     FractalCircle(renderer, depth-1, centerX-xOffset, centerY+yOffset, innerD);
     // Below right
     FractalCircle(renderer, depth-1, centerX+xOffset, centerY+yOffset, innerD);
+}
+
+bool FractalCircleInit(SDL_Renderer *renderer, int depth, int centerX, int centerY, int diameter) {
+    currCircles = 0;
+    try {
+        FractalCircle(renderer, depth, centerX, centerY, diameter);
+    } catch (...) {
+        // std::cout << "Exception state: " << currCircles << ", " << prevCircles << "\n";
+    }
+
+    // Incomplete
+    if (currCircles > prevCircles) {
+        prevCircles = currCircles;
+        std::cout << "Circles drawn: " << prevCircles << "\n";
+        return false;
+    }
+
+    // Complete
+    std::cout << "Complete: " << prevCircles << "\n";
+    return true;
 }

@@ -1,12 +1,14 @@
 //
-// Created by Sheldon Lobo on 2/26\7/24.
+// Created by Sheldon Lobo on 2/26/24.
 //
 
 #include <iostream>
+#include <chrono>
+#include <thread>
 #include <SDL.h>
 
 // Forward declaration
-void FractalCircle(SDL_Renderer *, int, int, int, int);
+bool FractalCircleInit(SDL_Renderer *, int, int, int, int);
 
 const int windowSize = 800;
 
@@ -40,6 +42,7 @@ int main(int argc, char **argv) {
         std::cout << "SDL_CreateWindow Error: " << SDL_GetError() << std::endl;
         return 1;
     }
+    SDL_RaiseWindow(window);
 
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     if (renderer == NULL) {
@@ -47,22 +50,24 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    // Event loop
     SDL_Event event;
-    bool firstTime = true;
+    SDL_WaitEvent(&event);
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
+    SDL_RenderClear(renderer);
+
+    // Draw, present, wait, clear until complete
+    while (!FractalCircleInit(renderer, depth, windowSize / 2, windowSize / 2, windowSize)) {
+        SDL_RenderPresent(renderer);
+        std::this_thread::sleep_for(std::chrono::milliseconds (200));
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
+        SDL_RenderClear(renderer);
+    }
+    SDL_RenderPresent(renderer);
+
+    // Wait for user to quit
     while (event.type != SDL_QUIT) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
         SDL_WaitEvent(&event);
-
-        if (firstTime || (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_SPACE)) {
-            SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
-            SDL_RenderClear(renderer);
-
-            FractalCircle(renderer, depth, windowSize / 2, windowSize / 2, windowSize);
-
-            SDL_RenderPresent(renderer);
-
-            firstTime = false;
-        }
     }
 
     SDL_DestroyRenderer(renderer);
