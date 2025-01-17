@@ -1,0 +1,10 @@
+[requires]
+libcurl/8.8.0
+poco/1.13.3
+
+[generators]
+CMakeDeps
+CMakeToolchain
+
+[layout]
+cmake_layout

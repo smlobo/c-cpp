@@ -1,7 +1,7 @@
+#include <iomanip>
 #include <iostream>
 #include <curl/curl.h>
-#include <tao/json.hpp>
-#include <tao/json/contrib/traits.hpp>
+#include <Poco/JSON/Parser.h>
 
 const std::string API_KEY = "&key=fee00b0d52c7cd8f170a09ce4785218a70523396";
 const std::string COUNTRIES = "&for=genc+standard+countries+and+areas:US,CN,IN";
@@ -14,9 +14,9 @@ struct MemoryStruct {
 static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)
 {
     size_t realsize = size * nmemb;
-    struct MemoryStruct *mem = (struct MemoryStruct *)userp;
+    struct MemoryStruct *mem = static_cast<struct MemoryStruct *>(userp);
 
-    char *ptr = (char *) realloc(mem->memory, mem->size + realsize + 1);
+    char *ptr = static_cast<char *>(realloc(mem->memory, mem->size + realsize + 1));
     if(!ptr) {
         /* out of memory! */
         printf("not enough memory (realloc returned NULL)\n");
@@ -71,8 +71,10 @@ int main() {
     curl_global_cleanup();
 
     // Parse the JSON
-    const tao::json::value v = tao::json::from_string(chunk.memory);
-    std::cout << std::setw( 2 ) << v << std::endl;  // Pretty-printed with indent 2.
+    Poco::JSON::Parser parser;
+    Poco::Dynamic::Var result = parser.parse(chunk.memory);
+    Poco::JSON::Stringifier::stringify(result, std::cout, 4);
+    std::cout << std::endl;
 
     return 0;
 }
