@@ -9,9 +9,11 @@
 
 const std::string ASIA_PATH = "/country/asia";
 const std::string AMERICA_PATH = "/country/america";
-const std::string SERVER = "localhost";
+const std::string SERVER = "127.0.0.1";
 const int PORT = 8080;
 const std::string ASIA_COUNTRY = "India";
 const std::string AMERICA_COUNTRY = "United States";
+
+std::string pocoVersion();
 
 #endif

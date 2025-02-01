@@ -18,5 +18,6 @@ cmake --build --preset conan-debug
 
 * Example run
 ```commandline
-./build-debug/build/Debug/server
+./build-debug/build/Debug/server [port]
+./build-debug/build/Debug/client [start-port[:end-port]]
 ```

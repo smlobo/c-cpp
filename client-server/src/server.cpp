@@ -6,14 +6,14 @@
 
 #include "constants.h"
 
-#include "Poco/Environment.h"
 #include "Poco/Net/HTTPServer.h"
 #include "Poco/Net/ServerSocket.h"
-#include "Poco/Util/ServerApplication.h"
 #include "Poco/Net/HTTPRequestHandlerFactory.h"
 #include "Poco/Net/HTTPRequestHandler.h"
 #include "Poco/Net/HTTPServerResponse.h"
 #include "Poco/Net/HTTPServerRequest.h"
+
+#include "Poco/Util/ServerApplication.h"
 
 class MyRequestHandler : public Poco::Net::HTTPRequestHandler {
 private:
@@ -22,11 +22,7 @@ private:
 
 public:
     explicit MyRequestHandler(int count) : count(count) {
-        std::string pocoVersion = Poco::format("Poco %d.%d.%d",
-            static_cast<int>(Poco::Environment::libraryVersion() >> 24),
-            static_cast<int>((Poco::Environment::libraryVersion() >> 16) & 0xFF),
-            static_cast<int>((Poco::Environment::libraryVersion() >> 8) & 0xFF));
-        version = "C++ " + std::string(__VERSION__) + " / " + pocoVersion;
+        version = pocoVersion();
     }
 
     void handleRequest(Poco::Net::HTTPServerRequest &request, Poco::Net::HTTPServerResponse &response) override {
@@ -59,11 +55,15 @@ public:
 
 class MyHTTPServer : public Poco::Util::ServerApplication {
 protected:
-    int main(const std::vector<std::string> &) override {
-        Poco::Net::ServerSocket socket(8080); // Listen on port 8080
+    int main(const std::vector<std::string> &args) override {
+        int port = PORT;
+        if (args.size() == 1) {
+            port = std::stoi(args[0]);
+        }
+        Poco::Net::ServerSocket socket(port);
         Poco::Net::HTTPServer server(new MyRequestHandlerFactory(), socket, new Poco::Net::HTTPServerParams);
 
-        std::cout << "Starting C++ POCO Server on port 8080 ..." << std::endl;
+        std::cout << "Starting C++ POCO Server on port "<< port << std::endl;
         server.start();
 
         waitForTerminationRequest(); // Wait for CTRL+C or termination signal
@@ -76,6 +76,12 @@ protected:
 };
 
 int main(int argc, char** argv) {
+    if (argc > 2) {
+        std::cout << "Usage: " << argv[0] << " [port]" << std::endl;
+        std::cout << "\tdefault : 8080" << std::endl;
+        exit(1);
+    }
+
     MyHTTPServer app;
     return app.run(argc, argv);
 }
