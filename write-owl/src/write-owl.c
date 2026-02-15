@@ -88,6 +88,9 @@ void set_font_text(struct context *ctx, const char *text)
 int get_font_texture(struct context *ctx)
 {
     ctx->font = TTF_OpenFont("assets/FreeSans.ttf", 30);
+    if (!ctx->font) {
+        printf("TTF_OpenFont: %s\n", TTF_GetError());
+    }
     set_font_text(ctx, "Hello owl!");
     return 1;
 }
