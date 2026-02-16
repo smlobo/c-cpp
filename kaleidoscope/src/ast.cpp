@@ -5,14 +5,14 @@
 #include <string>
 #include <vector>
 
-#include "ast.h"
-#include "codegen.h"
-
 #include <IR/Constants.h>
 #include <IR/Module.h>
 #include <IR/Verifier.h>
 
+#include "ast.h"
+#include "codegen.h"
 #include "errors.h"
+#include "main.h"
 
 //===----------------------------------------------------------------------===//
 // Abstract Syntax Tree (aka Parse Tree)
@@ -136,6 +136,9 @@ llvm::Function *FunctionAST::codegen() {
 
         // Validate the generated code, checking for consistency.
         verifyFunction(*TheFunction);
+
+        // Optimize the function.
+        TheFPM->run(*TheFunction, *TheFAM);
 
         return TheFunction;
     }

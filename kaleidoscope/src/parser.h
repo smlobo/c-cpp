@@ -8,4 +8,8 @@
 extern int CurToken;
 extern int getNextToken();
 
+extern void HandleDefinition();
+extern void HandleExtern();
+extern void HandleTopLevelExpression();
+
 #endif //KALEIDOSCOPE_PARSER_H

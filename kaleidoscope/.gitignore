@@ -1,0 +1,3 @@
+# toplevel LLVM IR files only (typical testing)
+/*.ll
+

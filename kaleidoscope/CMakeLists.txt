@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.29)
 
 project(kaleidoscope VERSION 1.0)
 
+find_package(ZLIB REQUIRED)
+find_package(zstd REQUIRED)
+
 add_executable(kaleidoscopec
         src/lexer.cpp
         src/main.cpp
@@ -28,6 +31,43 @@ set(LLVM_LINK_LIBRARIES
         Remarks
         BitstreamReader
         TargetParser
+        Passes
+        CodeGen
+        CGData
+        CodeGenTypes
+        Analysis
+        TransformUtils
+        MC
+        DebugInfoDWARFLowLevel
+        Object
+        Target
+        ipo
+        ProfileData
+        DebugInfoDWARF
+        ScalarOpts
+        Linker
+        Instrumentation
+        TextAPI
+        FrontendHLSL
+        ObjCARCOpts
+        HipStdPar
+        GlobalISel
+        BitReader
+        BitWriter
+        Vectorize
+        SandboxIR
+        AggressiveInstCombine
+        Coroutines
+        FrontendOpenMP
+        IRReader
+        MCParser
+        IRPrinter
+        InstCombine
+        CFGuard
+        AsmParser
+        FrontendAtomic
+        FrontendOffloading
+        ObjectYAML
 )
 
 foreach(LLVMLIB ${LLVM_LINK_LIBRARIES})
@@ -42,6 +82,9 @@ foreach(LLVMLIB ${LLVM_LINK_LIBRARIES})
             PRIVATE ${LLVMLIB_NAME}
     )
 endforeach()
+
+target_link_libraries(kaleidoscopec PRIVATE ZLIB::ZLIB)
+target_link_libraries(kaleidoscopec PRIVATE zstd::libzstd_shared)
 
 enable_testing()
 
