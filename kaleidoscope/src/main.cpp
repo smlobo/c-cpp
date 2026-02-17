@@ -5,6 +5,7 @@
 #include <fstream>
 #include <string>
 #include <iostream>
+#include <unistd.h>
 
 #include <IR/Module.h>
 #include <IR/PassManager.h>
@@ -28,10 +29,51 @@ std::unique_ptr<llvm::FunctionAnalysisManager> TheFAM;
 std::unique_ptr<llvm::CGSCCAnalysisManager> TheCGAM;
 std::unique_ptr<llvm::ModuleAnalysisManager> TheMAM;
 
-void printUsage(int argc, char *argv[]) {
-    std::cerr << "Usage: " << argv[0] << " <file.ks>" << std::endl;
+std::filesystem::path fileName;
+bool optimize = false;
+
+static void printUsage(int argc, char *argv[]) {
+    std::cerr << "Usage: " << argv[0] << " [-O] <file.ks>" << std::endl;
 }
 
+static bool parseOptions(int argc, char* argv[]) {
+    int opt;
+    while ((opt = getopt(argc, argv, "O")) != -1) {
+        switch (opt) {
+            case 'O':
+                optimize = true;
+                break;
+            default:
+                printUsage(argc, argv);
+                return false;
+        }
+    }
+
+    // Remaining arguments are positional
+    if (optind >= argc) {
+        std::cerr << "Error: missing input file\n";
+        printUsage(argc, argv);
+        return false;
+    }
+
+    fileName = argv[optind];
+
+    // Enforce exactly one positional argument
+    if (optind + 1 < argc) {
+        std::cerr << "Error: too many input files\n";
+        printUsage(argc, argv);
+        return false;
+    }
+
+    // Strict naming of input file
+    if (fileName.extension() != ".ks") {
+        std::cerr << "File must be .ks\n";
+        printUsage(argc, argv);
+        return false;
+    }
+
+    return true;
+}
 
 static void InitializeModuleAndManagers(std::string namePrefix) {
     std::cerr << "Initializing module: " << namePrefix << std::endl;
@@ -72,14 +114,7 @@ static void InitializeModuleAndManagers(std::string namePrefix) {
 }
 
 int main(int argc, char *argv[]) {
-    // Expect a single file on the command line
-    if (argc != 2) {
-        printUsage(argc, argv);
-        return 1;
-    }
-    std::filesystem::path fileName(argv[1]);
-    if (fileName.extension() != ".ks") {
-        std::cerr << "File must be .ks\n";
+    if (!parseOptions(argc, argv)) {
         return 1;
     }
     inputFile = std::ifstream(fileName);

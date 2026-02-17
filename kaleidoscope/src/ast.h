@@ -39,7 +39,7 @@ class VariableExprAST : public ExprAST {
 public:
     VariableExprAST(const std::string &Name);
 
-    llvm::Value *codegen();
+    llvm::Value *codegen() override;
 };
 
 /// BinaryExprAST - Expression class for a binary operator.
@@ -51,7 +51,7 @@ public:
     BinaryExprAST(char Op, std::unique_ptr<ExprAST> LHS,
                   std::unique_ptr<ExprAST> RHS);
 
-    llvm::Value *codegen();
+    llvm::Value *codegen() override;
 };
 
 /// CallExprAST - Expression class for function calls.
@@ -63,7 +63,7 @@ public:
     CallExprAST(const std::string &Callee,
                 std::vector<std::unique_ptr<ExprAST> > Args);
 
-    llvm::Value *codegen();
+    llvm::Value *codegen() override;
 };
 
 /// PrototypeAST - This class represents the "prototype" for a function,
@@ -91,6 +91,17 @@ public:
                 std::unique_ptr<ExprAST> Body);
 
     llvm::Function *codegen();
+};
+
+/// IfExprAST - Expression class for if/then/else.
+class IfExprAST : public ExprAST {
+    std::unique_ptr<ExprAST> Cond, Then, Else;
+
+public:
+    IfExprAST(std::unique_ptr<ExprAST> Cond, std::unique_ptr<ExprAST> Then,
+              std::unique_ptr<ExprAST> Else);
+
+    llvm::Value *codegen() override;
 };
 
 #endif //KALEIDOSCOPE_AST_H

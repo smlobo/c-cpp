@@ -138,7 +138,8 @@ llvm::Function *FunctionAST::codegen() {
         verifyFunction(*TheFunction);
 
         // Optimize the function.
-        TheFPM->run(*TheFunction, *TheFAM);
+        if (optimize)
+            TheFPM->run(*TheFunction, *TheFAM);
 
         return TheFunction;
     }
@@ -146,4 +147,58 @@ llvm::Function *FunctionAST::codegen() {
     // Error reading body, remove function.
     TheFunction->eraseFromParent();
     return nullptr;
+}
+
+IfExprAST::IfExprAST(std::unique_ptr<ExprAST> Cond, std::unique_ptr<ExprAST> Then,
+                     std::unique_ptr<ExprAST> Else)
+    : Cond(std::move(Cond)), Then(std::move(Then)), Else(std::move(Else)) {}
+
+llvm::Value *IfExprAST::codegen() {
+    llvm::Value *CondV = Cond->codegen();
+    if (!CondV)
+        return nullptr;
+
+    // Convert condition to a bool by comparing non-equal to 0.0.
+    CondV = Builder->CreateFCmpONE(CondV, llvm::ConstantFP::get(*TheContext,
+        llvm::APFloat(0.0)), "ifcond");
+
+    llvm::Function *TheFunction = Builder->GetInsertBlock()->getParent();
+    // Create blocks for the then and else cases.  Insert the 'then' block at the
+    // end of the function.
+    llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(*TheContext, "then",
+        TheFunction);
+    llvm::BasicBlock *elseBB = llvm::BasicBlock::Create(*TheContext, "else");
+    llvm::BasicBlock *endifBB = llvm::BasicBlock::Create(*TheContext, "endif");
+
+    Builder->CreateCondBr(CondV, thenBB, elseBB);
+
+    // Then code
+    Builder->SetInsertPoint(thenBB);
+    llvm::Value *ThenV = Then->codegen();
+    if (!ThenV)
+        return nullptr;
+    Builder->CreateBr(endifBB);
+    // Codegen of 'Then' can change the current block, update thenBB for the PHI.
+    thenBB = Builder->GetInsertBlock();
+
+    // Else code
+    TheFunction->insert(TheFunction->end(), elseBB);
+    Builder->SetInsertPoint(elseBB);
+    llvm::Value *ElseV = Else->codegen();
+    if (!ElseV)
+        return nullptr;
+    Builder->CreateBr(endifBB);
+    // Codegen of 'Else' can change the current block, update elseBB for the PHI.
+    elseBB = Builder->GetInsertBlock();
+
+    // endif PHI code
+    TheFunction->insert(TheFunction->end(), endifBB);
+    Builder->SetInsertPoint(endifBB);
+
+    llvm::PHINode *PN = Builder->CreatePHI(llvm::Type::getDoubleTy(*TheContext),
+        2, "iftmp");
+
+    PN->addIncoming(ThenV, thenBB);
+    PN->addIncoming(ElseV, elseBB);
+    return PN;
 }

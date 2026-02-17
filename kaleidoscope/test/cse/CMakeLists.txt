@@ -1,5 +1,5 @@
 add_test(NAME cse
-        COMMAND $<TARGET_FILE:kaleidoscopec> ${CMAKE_CURRENT_SOURCE_DIR}/cse.ks
+        COMMAND $<TARGET_FILE:kaleidoscopec> -O ${CMAKE_CURRENT_SOURCE_DIR}/cse.ks
 )
 
 add_test(NAME cse-link

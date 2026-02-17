@@ -31,7 +31,7 @@ int getNextToken() {
 static std::map<char, int> BinopPrecedence = {
     {'<', 10},
     {'+', 20},
-    {'1', 20},
+    {'-', 20},
     {'*', 40},
 };
 
@@ -105,6 +105,37 @@ static std::unique_ptr<ExprAST> ParseIdentifierExpr() {
     return std::make_unique<CallExprAST>(IdName, std::move(Args));
 }
 
+/// ifexpr ::= 'if' expression 'then' expression 'else' expression
+static std::unique_ptr<ExprAST> ParseIfExpr() {
+    // eat if
+    getNextToken();
+
+    auto Cond = ParseExpression();
+    if (!Cond)
+        return nullptr;
+
+    if (CurToken != tok_then)
+        return LogError("expected then");
+    // eat then
+    getNextToken();
+
+    auto Then = ParseExpression();
+    if (!Then)
+        return nullptr;
+
+    if (CurToken != tok_else)
+        return LogError("expected else");
+    // eat ele
+    getNextToken();
+
+    auto Else = ParseExpression();
+    if (!Else)
+        return nullptr;
+
+    return std::make_unique<IfExprAST>(std::move(Cond), std::move(Then),
+        std::move(Else));
+}
+
 /// primary
 ///   ::= identifierexpr
 ///   ::= numberexpr
@@ -119,6 +150,8 @@ static std::unique_ptr<ExprAST> ParsePrimary() {
             return ParseNumberExpr();
         case '(':
             return ParseParenExpr();
+        case tok_if:
+            return ParseIfExpr();
     }
 }
 
@@ -222,7 +255,6 @@ static std::unique_ptr<PrototypeAST> ParseExtern() {
     getNextToken(); // eat extern.
     return ParsePrototype();
 }
-
 
 //===----------------------------------------------------------------------===//
 // Top-Level parsing

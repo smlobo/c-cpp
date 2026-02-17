@@ -8,6 +8,8 @@
 #include <Analysis/CGSCCPassManager.h>
 #include <Analysis/LoopAnalysisManager.h>
 
+extern bool optimize;
+
 extern std::unique_ptr<llvm::FunctionPassManager> TheFPM;
 extern std::unique_ptr<llvm::LoopAnalysisManager> TheLAM;
 extern std::unique_ptr<llvm::FunctionAnalysisManager> TheFAM;

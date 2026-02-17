@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.29)
 
 project(kaleidoscope VERSION 1.0)
 
-find_package(ZLIB REQUIRED)
-find_package(zstd REQUIRED)
+find_package(ZLIB REQUIRED CONFIG)
+find_package(zstd REQUIRED CONFIG)
 
 add_executable(kaleidoscopec
         src/lexer.cpp
