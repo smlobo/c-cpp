@@ -202,3 +202,80 @@ llvm::Value *IfExprAST::codegen() {
     PN->addIncoming(ElseV, elseBB);
     return PN;
 }
+
+ForExprAST::ForExprAST(std::string &VarName, std::unique_ptr<ExprAST> Start,
+                       std::unique_ptr<ExprAST> End, std::unique_ptr<ExprAST> Stride,
+                       std::unique_ptr<ExprAST> Body)
+    : VarName(VarName), Start(std::move(Start)), End(std::move(End)),
+      Stride(std::move(Stride)), Body(std::move(Body)) {}
+
+llvm::Value *ForExprAST::codegen() {
+    // Emit the start code first, without 'variable' in scope.
+    llvm::Value *StartVal = Start->codegen();
+    if (!StartVal)
+        return nullptr;
+
+    llvm::BasicBlock *loopHeaderBB = Builder->GetInsertBlock();
+    llvm::Function *TheFunction = loopHeaderBB->getParent();
+
+    // Create block for the loop body
+    llvm::BasicBlock *loopBodyBB = llvm::BasicBlock::Create(*TheContext, "loopbody", TheFunction);
+
+    // Explicit fallthru to loop body
+    Builder->CreateBr(loopBodyBB);
+
+    // Set insertion of the loop body
+    Builder->SetInsertPoint(loopBodyBB);
+
+    // Phi for loop index
+    llvm::PHINode *loopIndex = Builder->CreatePHI(llvm::Type::getDoubleTy(*TheContext),
+    2, "loopindex");
+    loopIndex->addIncoming(StartVal, loopHeaderBB);
+
+    // Within the loop, the variable is defined equal to the PHI node.  If it
+    // shadows an existing variable, we have to restore it, so save it now.
+    llvm::Value *OldVal = NamedValues[VarName];
+    NamedValues[VarName] = loopIndex;
+
+    // Emit the loop body
+    if (!Body->codegen())
+        return nullptr;
+
+    // Emit the stride
+    llvm::Value *StrideVal = Stride->codegen();
+    if (!StrideVal)
+        return nullptr;
+
+    llvm::Value *NextVal = Builder->CreateFAdd(loopIndex, StrideVal, "nextloopindex");
+
+    // Compute the end condition.
+    llvm::Value *EndCond = End->codegen();
+    if (!EndCond)
+        return nullptr;
+
+    // Convert condition to a bool by comparing non-equal to 0.0.
+    EndCond = Builder->CreateFCmpONE(
+        EndCond, llvm::ConstantFP::get(*TheContext, llvm::APFloat(0.0)), "loopcond");
+
+    // loopBodyBB could be changed by codegen. Get if to complete the 'loopindex' Phi node
+    llvm::BasicBlock *loopBodyEndBB = Builder->GetInsertBlock();
+    loopIndex->addIncoming(NextVal, loopBodyEndBB);
+
+    // Create block for the loop exit
+    llvm::BasicBlock *loopExitBB = llvm::BasicBlock::Create(*TheContext, "loopexit", TheFunction);
+
+    // Insert the conditional branch into the end of LoopEndBB.
+    Builder->CreateCondBr(EndCond, loopBodyBB, loopExitBB);
+
+    // Any new code will be inserted in AfterBB.
+    Builder->SetInsertPoint(loopExitBB);
+
+    // Restore the unshadowed variable.
+    if (OldVal)
+        NamedValues[VarName] = OldVal;
+    else
+        NamedValues.erase(VarName);
+
+    // for expr always returns 0.0.
+    return llvm::Constant::getNullValue(llvm::Type::getDoubleTy(*TheContext));
+}

@@ -104,4 +104,16 @@ public:
     llvm::Value *codegen() override;
 };
 
+/// ForExprAST - Expression class for for/in.
+class ForExprAST : public ExprAST {
+    std::string VarName;
+    std::unique_ptr<ExprAST> Start, End, Stride, Body;
+
+public:
+        ForExprAST(std::string &VarName, std::unique_ptr<ExprAST> Start, std::unique_ptr<ExprAST> End,
+                   std::unique_ptr<ExprAST> Stride, std::unique_ptr<ExprAST> Body);
+
+    llvm::Value *codegen() override;
+};
+
 #endif //KALEIDOSCOPE_AST_H

@@ -125,7 +125,7 @@ static std::unique_ptr<ExprAST> ParseIfExpr() {
 
     if (CurToken != tok_else)
         return LogError("expected else");
-    // eat ele
+    // eat else
     getNextToken();
 
     auto Else = ParseExpression();
@@ -134,6 +134,61 @@ static std::unique_ptr<ExprAST> ParseIfExpr() {
 
     return std::make_unique<IfExprAST>(std::move(Cond), std::move(Then),
         std::move(Else));
+}
+
+/// forexpr ::= 'for' <start-expression>, <end-expression>, [stride-expression] 'in' expression
+static std::unique_ptr<ExprAST> ParseForExpr() {
+    // eat for
+    getNextToken();
+
+    if (CurToken != tok_identifier)
+        return LogError("expected identifier after for");
+
+    std::string IdName = IdentifierStr;
+    // eat identifier.
+    getNextToken();
+
+    if (CurToken != '=')
+        return LogError("expected '=' after for");
+    // eat '='.
+    getNextToken();
+
+    auto Start = ParseExpression();
+    if (!Start)
+        return nullptr;
+
+    if (CurToken != ',')
+        return LogError("expected , between loop start and iteration end");
+    // eat ,
+    getNextToken();
+
+    auto End = ParseExpression();
+    if (!End)
+        return nullptr;
+
+    std::unique_ptr<ExprAST> Stride;
+    if (CurToken == ',') {
+        // eat ,
+        getNextToken();
+
+        Stride = ParseExpression();
+        if (!Stride)
+            return nullptr;
+    } else {
+        Stride = std::make_unique<NumberExprAST>(1.0);
+    }
+
+    if (CurToken != tok_in)
+        return LogError("expected in");
+    // eat in
+    getNextToken();
+
+    auto Body = ParseExpression();
+    if (!Body)
+        return nullptr;
+
+    return std::make_unique<ForExprAST>(IdName, std::move(Start), std::move(End),
+        std::move(Stride), std::move(Body));
 }
 
 /// primary
@@ -152,6 +207,8 @@ static std::unique_ptr<ExprAST> ParsePrimary() {
             return ParseParenExpr();
         case tok_if:
             return ParseIfExpr();
+        case tok_for:
+            return ParseForExpr();
     }
 }
 
@@ -187,8 +244,7 @@ static std::unique_ptr<ExprAST> ParseBinOpRHS(int ExprPrec,
         }
 
         // Merge LHS/RHS.
-        LHS =
-                std::make_unique<BinaryExprAST>(BinOp, std::move(LHS), std::move(RHS));
+        LHS = std::make_unique<BinaryExprAST>(BinOp, std::move(LHS), std::move(RHS));
     }
 }
 
