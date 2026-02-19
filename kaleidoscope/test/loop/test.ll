@@ -1,7 +1,7 @@
 declare i32 @printf(ptr, ...)
 declare i32 @putchar(i32)
 
-declare double @printstar(double)
+declare double @printZ(double)
 
 @fmt = private constant [2 x i8] c"\0A\00"
 
@@ -14,7 +14,7 @@ entry:
 
 define i32 @main() {
 entry:
-    %r1 = call double (double) @printstar(double 4.000000e+00)
+    %r1 = call double (double) @printZ(double 4.000000e+00)
     call i32 (ptr, ...) @printf(ptr getelementptr (ptr, ptr @fmt))
     ret i32 0
 }

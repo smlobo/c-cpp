@@ -23,6 +23,11 @@ NumberExprAST::NumberExprAST(double Val) : Val(Val) {}
 llvm::Value *NumberExprAST::codegen() {
     return llvm::ConstantFP::get(*TheContext, llvm::APFloat(Val));
 }
+
+void NumberExprAST::print(int indent) {
+
+}
+
 VariableExprAST::VariableExprAST(const std::string &Name) : Name(Name) {}
 
 llvm::Value *VariableExprAST::codegen() {
@@ -31,6 +36,10 @@ llvm::Value *VariableExprAST::codegen() {
     if (!V)
         LogErrorV("Unknown variable name");
     return V;
+}
+
+void VariableExprAST::print(int indent) {
+
 }
 
 BinaryExprAST::BinaryExprAST(char Op, std::unique_ptr<ExprAST> LHS,
@@ -60,6 +69,10 @@ llvm::Value *BinaryExprAST::codegen() {
     }
 }
 
+void BinaryExprAST::print(int indent) {
+
+}
+
 CallExprAST::CallExprAST(const std::string &Callee,
                          std::vector<std::unique_ptr<ExprAST>> Args)
     : Callee(Callee), Args(std::move(Args)) {}
@@ -84,11 +97,14 @@ llvm::Value *CallExprAST::codegen() {
     return Builder->CreateCall(CalleeF, ArgsV, "calltmp");
 }
 
+void CallExprAST::print(int indent) {
+
+}
+
 PrototypeAST::PrototypeAST(const std::string &Name, std::vector<std::string> Args)
     : Name(Name), Args(std::move(Args)) {}
 
 const std::string &PrototypeAST::getName() const { return Name; }
-
 
 llvm::Function *PrototypeAST::codegen() {
     // Make the function type:  double(double,double) etc.
@@ -107,9 +123,19 @@ llvm::Function *PrototypeAST::codegen() {
     return F;
 }
 
+void PrototypeAST::print(int indent) {
+
+}
+
 FunctionAST::FunctionAST(std::unique_ptr<PrototypeAST> Proto,
-                         std::unique_ptr<ExprAST> Body)
-    : Proto(std::move(Proto)), Body(std::move(Body)) {}
+                         std::unique_ptr<ExprAST> FirstExpr)
+    : Proto(std::move(Proto)) {
+    BodyExprs.emplace_back(std::move(FirstExpr));
+}
+
+void FunctionAST::addBodyExpr(std::unique_ptr<ExprAST> BodyExpr) {
+    BodyExprs.emplace_back(std::move(BodyExpr));
+}
 
 llvm::Function *FunctionAST::codegen() {
     // First, check for an existing function from a previous 'extern' declaration.
@@ -117,9 +143,6 @@ llvm::Function *FunctionAST::codegen() {
 
     if (!TheFunction)
         TheFunction = Proto->codegen();
-
-    if (!TheFunction)
-        return nullptr;
 
     // Create a new basic block to start insertion into.
     llvm::BasicBlock *BB = llvm::BasicBlock::Create(*TheContext, "entry", TheFunction);
@@ -130,7 +153,16 @@ llvm::Function *FunctionAST::codegen() {
     for (auto &Arg : TheFunction->args())
         NamedValues[std::string(Arg.getName())] = &Arg;
 
-    if (llvm::Value *RetVal = Body->codegen()) {
+    // Iterate over all but last expression
+    for (std::size_t i = 0; i < BodyExprs.size() - 1; ++i) {
+        if (llvm::Value *Result = BodyExprs[i]->codegen()) {
+        } else {
+            // Error reading body, remove function.
+            TheFunction->eraseFromParent();
+            return nullptr;
+        }
+    }
+    if (llvm::Value *RetVal = BodyExprs.back()->codegen()) {
         // Finish off the function.
         Builder->CreateRet(RetVal);
 
@@ -147,6 +179,10 @@ llvm::Function *FunctionAST::codegen() {
     // Error reading body, remove function.
     TheFunction->eraseFromParent();
     return nullptr;
+}
+
+void FunctionAST::print(int indent) {
+
 }
 
 IfExprAST::IfExprAST(std::unique_ptr<ExprAST> Cond, std::unique_ptr<ExprAST> Then,
@@ -201,6 +237,10 @@ llvm::Value *IfExprAST::codegen() {
     PN->addIncoming(ThenV, thenBB);
     PN->addIncoming(ElseV, elseBB);
     return PN;
+}
+
+void IfExprAST::print(int indent) {
+
 }
 
 ForExprAST::ForExprAST(std::string &VarName, std::unique_ptr<ExprAST> Start,
@@ -278,4 +318,8 @@ llvm::Value *ForExprAST::codegen() {
 
     // for expr always returns 0.0.
     return llvm::Constant::getNullValue(llvm::Type::getDoubleTy(*TheContext));
+}
+
+void ForExprAST::print(int indent) {
+
 }

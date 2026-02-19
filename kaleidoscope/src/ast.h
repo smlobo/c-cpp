@@ -20,6 +20,8 @@ public:
     virtual ~ExprAST() = default;
 
     virtual llvm::Value *codegen() = 0;
+
+    virtual void print(int indent) = 0;
 };
 
 /// NumberExprAST - Expression class for numeric literals like "1.0".
@@ -30,6 +32,8 @@ public:
     NumberExprAST(double Val);
 
     llvm::Value *codegen() override;
+
+    void print(int indent) override;
 };
 
 /// VariableExprAST - Expression class for referencing a variable, like "a".
@@ -40,6 +44,8 @@ public:
     VariableExprAST(const std::string &Name);
 
     llvm::Value *codegen() override;
+
+    void print(int indent) override;
 };
 
 /// BinaryExprAST - Expression class for a binary operator.
@@ -52,6 +58,8 @@ public:
                   std::unique_ptr<ExprAST> RHS);
 
     llvm::Value *codegen() override;
+
+    void print(int indent) override;
 };
 
 /// CallExprAST - Expression class for function calls.
@@ -64,6 +72,8 @@ public:
                 std::vector<std::unique_ptr<ExprAST> > Args);
 
     llvm::Value *codegen() override;
+
+    void print(int indent) override;
 };
 
 /// PrototypeAST - This class represents the "prototype" for a function,
@@ -79,18 +89,24 @@ public:
     const std::string &getName() const;
 
     llvm::Function *codegen();
+
+    void print(int indent);
 };
 
 /// FunctionAST - This class represents a function definition itself.
 class FunctionAST {
     std::unique_ptr<PrototypeAST> Proto;
-    std::unique_ptr<ExprAST> Body;
+    std::vector<std::unique_ptr<ExprAST>> BodyExprs;
 
 public:
     FunctionAST(std::unique_ptr<PrototypeAST> Proto,
-                std::unique_ptr<ExprAST> Body);
+                std::unique_ptr<ExprAST> FirstExpr);
+
+    void addBodyExpr(std::unique_ptr<ExprAST> Expr);
 
     llvm::Function *codegen();
+
+    void print(int indent);
 };
 
 /// IfExprAST - Expression class for if/then/else.
@@ -102,6 +118,8 @@ public:
               std::unique_ptr<ExprAST> Else);
 
     llvm::Value *codegen() override;
+
+    void print(int indent) override;
 };
 
 /// ForExprAST - Expression class for for/in.
@@ -114,6 +132,8 @@ public:
                    std::unique_ptr<ExprAST> Stride, std::unique_ptr<ExprAST> Body);
 
     llvm::Value *codegen() override;
+
+    void print(int indent) override;
 };
 
 #endif //KALEIDOSCOPE_AST_H

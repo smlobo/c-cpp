@@ -2,5 +2,3 @@
 
 def foo(x)
     x + 1;
-
-foo(1);

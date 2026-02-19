@@ -8,8 +8,8 @@
 extern int CurToken;
 extern int getNextToken();
 
-extern void HandleDefinition();
+extern std::unique_ptr<FunctionAST> HandleDefinition();
 extern void HandleExtern();
-extern void HandleTopLevelExpression();
+extern std::unique_ptr<FunctionAST> HandleExpression(std::unique_ptr<FunctionAST> FnAST);
 
 #endif //KALEIDOSCOPE_PARSER_H

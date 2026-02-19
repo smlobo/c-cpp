@@ -316,18 +316,15 @@ static std::unique_ptr<PrototypeAST> ParseExtern() {
 // Top-Level parsing
 //===----------------------------------------------------------------------===//
 
-void HandleDefinition() {
+std::unique_ptr<FunctionAST> HandleDefinition() {
     if (auto FnAST = ParseDefinition()) {
         std::cerr << "Parsed a function definition.\n";
-        if (auto *FnIR = FnAST->codegen()) {
-            std::cerr << "Read function definition:\n";
-            FnIR->print(llvm::errs());
-            std::cerr << std::endl;
-        }
-    } else {
-        // Skip token for error recovery.
-        getNextToken();
+        return FnAST;
     }
+
+    // Skip token for error recovery.
+    getNextToken();
+    return nullptr;
 }
 
 void HandleExtern() {
@@ -344,20 +341,15 @@ void HandleExtern() {
     }
 }
 
-void HandleTopLevelExpression() {
-    // Evaluate a top-level expression into an anonymous function.
-    if (auto FnAST = ParseTopLevelExpr()) {
-        std::cerr << "Parsed a top-level expr\n";
-        if (auto *FnIR = FnAST->codegen()) {
-            std::cerr << "Read top-level expression: ";
-            FnIR->print(llvm::errs());
-            std::cerr << std::endl;
-
-            // Remove the anonymous expression.
-            FnIR->eraseFromParent();
-        }
-    } else {
-        // Skip token for error recovery.
-        getNextToken();
+std::unique_ptr<FunctionAST> HandleExpression(std::unique_ptr<FunctionAST> FnAST) {
+    // Evaluate an expression into the preceding function definition
+    if (auto ExprAST = ParseExpression()) {
+        std::cerr << "Parsed an expr into the preceding definition\n";
+        FnAST->addBodyExpr(std::move(ExprAST));
+        return FnAST;
     }
+
+    // Skip token for error recovery.
+    getNextToken();
+    return nullptr;
 }

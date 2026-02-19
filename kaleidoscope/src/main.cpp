@@ -17,6 +17,7 @@
 
 #include <Passes/PassBuilder.h>
 
+#include "ast.h"
 #include "codegen.h"
 #include "lexer.h"
 #include "parser.h"
@@ -128,6 +129,7 @@ int main(int argc, char *argv[]) {
 
     getNextToken();
     bool done = false;
+    std::unique_ptr<FunctionAST> currentFunctionAST = nullptr;
     while (!done) {
         switch (CurToken) {
             case tok_eof:
@@ -137,14 +139,37 @@ int main(int argc, char *argv[]) {
                 getNextToken();
                 break;
             case tok_def:
-                HandleDefinition();
+                // Code generation for the previous function
+                if (currentFunctionAST) {
+                    if (auto *FnIR = currentFunctionAST->codegen()) {
+                        std::cerr << "Function code generated:\n";
+                        FnIR->print(llvm::errs());
+                        std::cerr << std::endl;
+                    } else {
+                        // Skip token for error recovery.
+                        getNextToken();
+                    }
+                }
+                currentFunctionAST = HandleDefinition();
                 break;
             case tok_extern:
                 HandleExtern();
                 break;
             default:
-                HandleTopLevelExpression();
+                currentFunctionAST = HandleExpression(std::move(currentFunctionAST));
                 break;
+        }
+    }
+
+    // Code generation for the previous function
+    if (currentFunctionAST) {
+        if (auto *FnIR = currentFunctionAST->codegen()) {
+            std::cerr << "(End) Function code generated:\n";
+            FnIR->print(llvm::errs());
+            std::cerr << std::endl;
+        } else {
+            // Skip token for error recovery.
+            getNextToken();
         }
     }
 
