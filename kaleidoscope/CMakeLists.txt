@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.29)
 
-project(kaleidoscope VERSION 1.0)
+project(kaleidoscope VERSION 1.0 LANGUAGES CXX)
 
 find_package(ZLIB REQUIRED CONFIG)
 find_package(zstd REQUIRED CONFIG)
@@ -13,6 +13,8 @@ add_executable(kaleidoscopec
         src/errors.cpp
         src/parser.cpp
 )
+
+target_compile_features(kaleidoscopec PRIVATE cxx_std_20)
 
 set(LLVM_AREA $ENV{HOME}/repos/llvm-project)
 

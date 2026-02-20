@@ -12,6 +12,7 @@
 #include "lexer.h"
 #include "ast.h"
 #include "errors.h"
+#include "main.h"
 
 //===----------------------------------------------------------------------===//
 // Parser
@@ -318,7 +319,9 @@ static std::unique_ptr<PrototypeAST> ParseExtern() {
 
 std::unique_ptr<FunctionAST> HandleDefinition() {
     if (auto FnAST = ParseDefinition()) {
-        std::cerr << "Parsed a function definition.\n";
+        if (ast_dump) {
+            FnAST->print(0);
+        }
         return FnAST;
     }
 
@@ -329,11 +332,15 @@ std::unique_ptr<FunctionAST> HandleDefinition() {
 
 void HandleExtern() {
     if (auto ProtoAST = ParseExtern()) {
-        std::cerr << "Parsed an extern\n";
+        if (ast_dump) {
+            ProtoAST->print(0);
+        }
         if (auto *FnIR = ProtoAST->codegen()) {
-            std::cerr << "Read extern: ";
-            FnIR->print(llvm::errs());
-            std::cerr << std::endl;
+            if (debug) {
+                std::cerr << "Extern codegen:\n";
+                FnIR->print(llvm::errs());
+                std::cerr << std::endl;
+            }
         }
     } else {
         // Skip token for error recovery.
@@ -344,7 +351,9 @@ void HandleExtern() {
 std::unique_ptr<FunctionAST> HandleExpression(std::unique_ptr<FunctionAST> FnAST) {
     // Evaluate an expression into the preceding function definition
     if (auto ExprAST = ParseExpression()) {
-        std::cerr << "Parsed an expr into the preceding definition\n";
+        if (ast_dump) {
+            ExprAST->print(4);
+        }
         FnAST->addBodyExpr(std::move(ExprAST));
         return FnAST;
     }

@@ -14,4 +14,6 @@ extern std::unique_ptr<llvm::IRBuilder<>> Builder;
 extern std::unique_ptr<llvm::Module> TheModule;
 extern std::map<std::string, llvm::Value *> NamedValues;
 
+extern void FunctionCodegen(std::unique_ptr<FunctionAST> FnAST);
+
 #endif //KALEIDOSCOPE_CODEGEN_H

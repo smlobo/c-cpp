@@ -5,7 +5,7 @@
 #include <fstream>
 #include <string>
 #include <iostream>
-#include <unistd.h>
+#include <getopt.h>
 
 #include <IR/Module.h>
 #include <IR/PassManager.h>
@@ -32,17 +32,36 @@ std::unique_ptr<llvm::ModuleAnalysisManager> TheMAM;
 
 std::filesystem::path fileName;
 bool optimize = false;
+bool debug = false;
+bool ast_dump = false;
+
+static struct option long_options[] = {
+    {"help",      no_argument,       0, 'h'},
+    {"optimize",  no_argument,       0, 'O'},
+    {"ast-dump",  no_argument,       0, 'a'},
+    {"debug",     no_argument,       0, 'd'},
+    {0, 0, 0, 0}
+};
 
 static void printUsage(int argc, char *argv[]) {
-    std::cerr << "Usage: " << argv[0] << " [-O] <file.ks>" << std::endl;
+    std::cerr << "Usage: " << argv[0] << " [-O] [-<file.ks>" << std::endl;
 }
 
 static bool parseOptions(int argc, char* argv[]) {
     int opt;
-    while ((opt = getopt(argc, argv, "O")) != -1) {
+    while ((opt = getopt_long(argc, argv, "hOad", long_options, nullptr)) != -1) {
         switch (opt) {
+            case 'h':
+                printUsage(argc, argv);
+                exit(0);
             case 'O':
                 optimize = true;
+                break;
+            case 'd':
+                debug = true;
+                break;
+            case 'a':
+                ast_dump = true;
                 break;
             default:
                 printUsage(argc, argv);
@@ -140,16 +159,7 @@ int main(int argc, char *argv[]) {
                 break;
             case tok_def:
                 // Code generation for the previous function
-                if (currentFunctionAST) {
-                    if (auto *FnIR = currentFunctionAST->codegen()) {
-                        std::cerr << "Function code generated:\n";
-                        FnIR->print(llvm::errs());
-                        std::cerr << std::endl;
-                    } else {
-                        // Skip token for error recovery.
-                        getNextToken();
-                    }
-                }
+                FunctionCodegen(std::move(currentFunctionAST));
                 currentFunctionAST = HandleDefinition();
                 break;
             case tok_extern:
@@ -161,17 +171,8 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    // Code generation for the previous function
-    if (currentFunctionAST) {
-        if (auto *FnIR = currentFunctionAST->codegen()) {
-            std::cerr << "(End) Function code generated:\n";
-            FnIR->print(llvm::errs());
-            std::cerr << std::endl;
-        } else {
-            // Skip token for error recovery.
-            getNextToken();
-        }
-    }
+    // Code generation for the last function
+    FunctionCodegen(std::move(currentFunctionAST));
 
     // Write the module
     std::cerr << "Writing to file: " << TheModule->getName().str() << std::endl;

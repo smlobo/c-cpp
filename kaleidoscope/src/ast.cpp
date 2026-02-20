@@ -4,10 +4,12 @@
 
 #include <string>
 #include <vector>
+#include <iostream>
 
 #include <IR/Constants.h>
 #include <IR/Module.h>
 #include <IR/Verifier.h>
+#include "llvm/Support/raw_ostream.h"
 
 #include "ast.h"
 #include "codegen.h"
@@ -25,7 +27,12 @@ llvm::Value *NumberExprAST::codegen() {
 }
 
 void NumberExprAST::print(int indent) {
-
+    llvm::errs().indent(indent);
+    llvm::errs().changeColor(llvm::raw_ostream::GREEN, true);
+    llvm::errs() << "NumberExprAST: ";
+    llvm::errs().changeColor(llvm::raw_ostream::BRIGHT_GREEN, true);
+    llvm::errs() << std::format("{:.2f}", Val) << "\n";
+    llvm::errs().resetColor();
 }
 
 VariableExprAST::VariableExprAST(const std::string &Name) : Name(Name) {}
@@ -39,7 +46,12 @@ llvm::Value *VariableExprAST::codegen() {
 }
 
 void VariableExprAST::print(int indent) {
-
+    llvm::errs().indent(indent);
+    llvm::errs().changeColor(llvm::raw_ostream::BLUE, true);
+    llvm::errs() << "VariableExprAST: ";
+    llvm::errs().changeColor(llvm::raw_ostream::BRIGHT_BLUE, true);
+    llvm::errs() << Name << "\n";
+    llvm::errs().resetColor();
 }
 
 BinaryExprAST::BinaryExprAST(char Op, std::unique_ptr<ExprAST> LHS,
@@ -70,7 +82,14 @@ llvm::Value *BinaryExprAST::codegen() {
 }
 
 void BinaryExprAST::print(int indent) {
-
+    llvm::errs().indent(indent);
+    llvm::errs().changeColor(llvm::raw_ostream::MAGENTA, true);
+    llvm::errs() << "BinaryExprAST: ";
+    llvm::errs().changeColor(llvm::raw_ostream::BRIGHT_MAGENTA, true);
+    llvm::errs() << Op << "\n";
+    llvm::errs().resetColor();
+    LHS->print(indent + 2);
+    RHS->print(indent + 2);
 }
 
 CallExprAST::CallExprAST(const std::string &Callee,
@@ -98,7 +117,15 @@ llvm::Value *CallExprAST::codegen() {
 }
 
 void CallExprAST::print(int indent) {
-
+    llvm::errs().indent(indent);
+    llvm::errs().changeColor(llvm::raw_ostream::CYAN, true);
+    llvm::errs() << "CallExprAST: ";
+    llvm::errs().changeColor(llvm::raw_ostream::BRIGHT_CYAN, true);
+    llvm::errs() << Callee << "\n";
+    llvm::errs().resetColor();
+    for (const auto &Arg : Args) {
+        Arg->print(indent + 2);
+    }
 }
 
 PrototypeAST::PrototypeAST(const std::string &Name, std::vector<std::string> Args)
@@ -124,7 +151,16 @@ llvm::Function *PrototypeAST::codegen() {
 }
 
 void PrototypeAST::print(int indent) {
-
+    llvm::errs().indent(indent);
+    llvm::errs().changeColor(llvm::raw_ostream::CYAN, true);
+    llvm::errs() << "PrototypeAST: ";
+    llvm::errs().changeColor(llvm::raw_ostream::BRIGHT_CYAN, true);
+    llvm::errs() << Name << " (";
+    for (const auto &Arg : Args) {
+        llvm::errs() << Arg << ", ";
+    }
+    llvm::errs() << ")\n";
+    llvm::errs().resetColor();
 }
 
 FunctionAST::FunctionAST(std::unique_ptr<PrototypeAST> Proto,
@@ -182,7 +218,14 @@ llvm::Function *FunctionAST::codegen() {
 }
 
 void FunctionAST::print(int indent) {
-
+    llvm::errs().indent(indent);
+    llvm::errs().changeColor(llvm::raw_ostream::YELLOW, true);
+    llvm::errs() << "FunctionAST:\n";
+    llvm::errs().resetColor();
+    Proto->print(indent + 2);
+    for (const auto &BodyExpr : BodyExprs) {
+        BodyExpr->print(indent + 2);
+    }
 }
 
 IfExprAST::IfExprAST(std::unique_ptr<ExprAST> Cond, std::unique_ptr<ExprAST> Then,
@@ -240,7 +283,13 @@ llvm::Value *IfExprAST::codegen() {
 }
 
 void IfExprAST::print(int indent) {
-
+    llvm::errs().indent(indent);
+    llvm::errs().changeColor(llvm::raw_ostream::RED, true);
+    llvm::errs() << "IfExprAST:\n";
+    llvm::errs().resetColor();
+    Cond->print(indent + 2);
+    Then->print(indent + 2);
+    Else->print(indent + 2);
 }
 
 ForExprAST::ForExprAST(std::string &VarName, std::unique_ptr<ExprAST> Start,
@@ -321,5 +370,14 @@ llvm::Value *ForExprAST::codegen() {
 }
 
 void ForExprAST::print(int indent) {
-
+    llvm::errs().indent(indent);
+    llvm::errs().changeColor(llvm::raw_ostream::RED, true);
+    llvm::errs() << "ForExprAST: ";
+    llvm::errs().changeColor(llvm::raw_ostream::BRIGHT_RED, true);
+    llvm::errs() << VarName << "\n";
+    llvm::errs().resetColor();
+    Start->print(indent + 2);
+    End->print(indent + 2);
+    Stride->print(indent + 2);
+    Body->print(indent + 2);
 }

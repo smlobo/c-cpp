@@ -9,6 +9,8 @@
 #include <Analysis/LoopAnalysisManager.h>
 
 extern bool optimize;
+extern bool debug;
+extern bool ast_dump;
 
 extern std::unique_ptr<llvm::FunctionPassManager> TheFPM;
 extern std::unique_ptr<llvm::LoopAnalysisManager> TheLAM;
