@@ -12,4 +12,6 @@ extern std::unique_ptr<FunctionAST> HandleDefinition();
 extern void HandleExtern();
 extern std::unique_ptr<FunctionAST> HandleExpression(std::unique_ptr<FunctionAST> FnAST);
 
+extern std::map<char, unsigned> BinopPrecedence;
+
 #endif //KALEIDOSCOPE_PARSER_H

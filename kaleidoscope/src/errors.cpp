@@ -8,7 +8,7 @@
 
 /// LogError* - These are little helper functions for error handling.
 std::unique_ptr<ExprAST> LogError(const char *Str) {
-    std::cerr << "Error: %s" << Str << std::endl;
+    std::cerr << "Error: " << Str << std::endl;
     return nullptr;
 }
 

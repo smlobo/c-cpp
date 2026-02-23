@@ -9,12 +9,13 @@
 #include <IR/Constants.h>
 #include <IR/Module.h>
 #include <IR/Verifier.h>
-#include "llvm/Support/raw_ostream.h"
+#include <llvm/Support/raw_ostream.h>
 
 #include "ast.h"
 #include "codegen.h"
 #include "errors.h"
 #include "main.h"
+#include "parser.h"
 
 //===----------------------------------------------------------------------===//
 // Abstract Syntax Tree (aka Parse Tree)
@@ -54,8 +55,34 @@ void VariableExprAST::print(int indent) {
     llvm::errs().resetColor();
 }
 
-BinaryExprAST::BinaryExprAST(char Op, std::unique_ptr<ExprAST> LHS,
-                             std::unique_ptr<ExprAST> RHS)
+UnaryExprAST::UnaryExprAST(char Op, std::unique_ptr<ExprAST> Operand)
+    : Op(Op), Operand(std::move(Operand)) {}
+
+llvm::Value *UnaryExprAST::codegen() {
+    llvm::Value *O = Operand->codegen();
+    if (!O)
+        return nullptr;
+
+    // User defined operator
+    llvm::Function *function = TheModule->getFunction(std::string("unary") + Op);
+    if (!function)
+        return LogErrorV("unary operator not found");
+
+    llvm::Value *Ops[1] = {O};
+    return Builder->CreateCall(function, Ops, "unaryexpr");
+}
+
+void UnaryExprAST::print(int indent) {
+    llvm::errs().indent(indent);
+    llvm::errs().changeColor(llvm::raw_ostream::MAGENTA, true);
+    llvm::errs() << "UnaryExprAST: ";
+    llvm::errs().changeColor(llvm::raw_ostream::BRIGHT_MAGENTA, true);
+    llvm::errs() << Op << "\n";
+    llvm::errs().resetColor();
+    Operand->print(indent + 2);
+}
+
+BinaryExprAST::BinaryExprAST(char Op, std::unique_ptr<ExprAST> LHS, std::unique_ptr<ExprAST> RHS)
     : Op(Op), LHS(std::move(LHS)), RHS(std::move(RHS)) {}
 
 llvm::Value *BinaryExprAST::codegen() {
@@ -77,8 +104,16 @@ llvm::Value *BinaryExprAST::codegen() {
             return Builder->CreateUIToFP(L, llvm::Type::getDoubleTy(*TheContext),
                                          "booltmp");
         default:
-            return LogErrorV("invalid binary operator");
+            break;
     }
+
+    // Uer defined operator
+    llvm::Function *function = TheModule->getFunction(std::string("binary") + Op);
+    if (!function)
+        return LogErrorV("binary operator not found");
+
+    llvm::Value *Ops[2] = {L, R};
+    return Builder->CreateCall(function, Ops, "binaryexpr");
 }
 
 void BinaryExprAST::print(int indent) {
@@ -128,10 +163,29 @@ void CallExprAST::print(int indent) {
     }
 }
 
-PrototypeAST::PrototypeAST(const std::string &Name, std::vector<std::string> Args)
-    : Name(Name), Args(std::move(Args)) {}
+PrototypeAST::PrototypeAST(const std::string &Name, std::vector<std::string> Args, char Operator,
+                           unsigned Precedence)
+    : Name(Name), Args(std::move(Args)), Operator(Operator), Precedence(Precedence) {}
 
-const std::string &PrototypeAST::getName() const { return Name; }
+const std::string &PrototypeAST::getName() const {
+    return Name;
+}
+
+const char PrototypeAST::getOperator() const {
+    return Operator;
+}
+
+bool PrototypeAST::isUnaryOp() const {
+    return Operator != '\0' && Args.size() == 1;
+}
+
+bool PrototypeAST::isBinaryOp() const {
+    return Operator != '\0' && Args.size() == 2;
+}
+
+unsigned PrototypeAST::getBinaryPrecedence() const {
+    return Precedence;
+}
 
 llvm::Function *PrototypeAST::codegen() {
     // Make the function type:  double(double,double) etc.
@@ -179,6 +233,10 @@ llvm::Function *FunctionAST::codegen() {
 
     if (!TheFunction)
         TheFunction = Proto->codegen();
+
+    // If this is an operator, set precedence
+    if (Proto->isBinaryOp())
+        BinopPrecedence[Proto->getOperator()] = Proto->getBinaryPrecedence();
 
     // Create a new basic block to start insertion into.
     llvm::BasicBlock *BB = llvm::BasicBlock::Create(*TheContext, "entry", TheFunction);

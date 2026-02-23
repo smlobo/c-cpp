@@ -29,7 +29,7 @@ int getNextToken() {
 
 /// BinopPrecedence - This holds the precedence for each binary operator that is
 /// defined.
-static std::map<char, int> BinopPrecedence = {
+std::map<char, unsigned> BinopPrecedence = {
     {'<', 10},
     {'+', 20},
     {'-', 20},
@@ -213,6 +213,22 @@ static std::unique_ptr<ExprAST> ParsePrimary() {
     }
 }
 
+/// unary
+///   ::= primary
+///   ::= '!' unary
+static std::unique_ptr<ExprAST> ParseUnary() {
+    // If the current token is not an operator, it must be a primary expr.
+    if (!isascii(CurToken) || CurToken == '(' || CurToken == ',')
+        return ParsePrimary();
+
+    // If this is a unary operator, read it.
+    int Opc = CurToken;
+    getNextToken();
+    if (auto Operand = ParseUnary())
+        return std::make_unique<UnaryExprAST>(Opc, std::move(Operand));
+    return nullptr;
+}
+
 /// binoprhs
 ///   ::= ('+' primary)*
 static std::unique_ptr<ExprAST> ParseBinOpRHS(int ExprPrec,
@@ -230,8 +246,8 @@ static std::unique_ptr<ExprAST> ParseBinOpRHS(int ExprPrec,
         int BinOp = CurToken;
         getNextToken(); // eat binop
 
-        // Parse the primary expression after the binary operator.
-        auto RHS = ParsePrimary();
+        // Parse the unary expression after the binary operator.
+        auto RHS = ParseUnary();
         if (!RHS)
             return nullptr;
 
@@ -250,10 +266,10 @@ static std::unique_ptr<ExprAST> ParseBinOpRHS(int ExprPrec,
 }
 
 /// expression
-///   ::= primary binoprhs
+///   ::= unary binoprhs
 ///
 static std::unique_ptr<ExprAST> ParseExpression() {
-    auto LHS = ParsePrimary();
+    auto LHS = ParseUnary();
     if (!LHS)
         return nullptr;
 
@@ -262,12 +278,48 @@ static std::unique_ptr<ExprAST> ParseExpression() {
 
 /// prototype
 ///   ::= id '(' id* ')'
+///   ::= binary LETTER number? (id, id)
 static std::unique_ptr<PrototypeAST> ParsePrototype() {
-    if (CurToken != tok_identifier)
-        return LogErrorP("Expected function name in prototype");
+    std::string FnName;
+    unsigned operatorKind = 0;
+    unsigned BinaryPrecedence = 30;
+    char Operator = '\0';
 
-    std::string FnName = IdentifierStr;
-    getNextToken();
+    switch (CurToken) {
+        case tok_identifier:
+            FnName = IdentifierStr;
+            getNextToken();
+            break;
+        case tok_unary:
+            getNextToken();
+            if (!isascii(CurToken))
+                return LogErrorP("Expected unary operator");
+            FnName = "unary";
+            Operator = static_cast<char>(CurToken);
+            FnName += Operator;
+            getNextToken();
+            operatorKind = 1;
+            break;
+        case tok_binary:
+            getNextToken();
+            if (!isascii(CurToken))
+                return LogErrorP("Expected binary operator");
+            FnName = "binary";
+            Operator = static_cast<char>(CurToken);
+            FnName += Operator;
+            getNextToken();
+            // Read the precedence if present
+            if (CurToken == tok_number) {
+                if (NumVal < 1 || NumVal > 100)
+                    return LogErrorP("Expected number after unary operator");
+                BinaryPrecedence = static_cast<unsigned>(NumVal);
+                getNextToken();
+            }
+            operatorKind = 2;
+            break;
+        default:
+            return LogErrorP("Expected function name in prototype");
+    }
 
     if (CurToken != '(')
         return LogErrorP("Expected '(' in prototype");
@@ -281,7 +333,11 @@ static std::unique_ptr<PrototypeAST> ParsePrototype() {
     // success.
     getNextToken(); // eat ')'.
 
-    return std::make_unique<PrototypeAST>(FnName, std::move(ArgNames));
+    if (operatorKind && ArgNames.size() != operatorKind)
+        return LogErrorP("Invalid number of operands for operator");
+
+    return std::make_unique<PrototypeAST>(FnName, std::move(ArgNames), Operator,
+        BinaryPrecedence);
 }
 
 /// definition ::= 'def' prototype expression
@@ -293,17 +349,6 @@ static std::unique_ptr<FunctionAST> ParseDefinition() {
 
     if (auto E = ParseExpression())
         return std::make_unique<FunctionAST>(std::move(Proto), std::move(E));
-    return nullptr;
-}
-
-/// toplevelexpr ::= expression
-static std::unique_ptr<FunctionAST> ParseTopLevelExpr() {
-    if (auto E = ParseExpression()) {
-        // Make an anonymous proto.
-        auto Proto = std::make_unique<PrototypeAST>("__anon_expr",
-                                                    std::vector<std::string>());
-        return std::make_unique<FunctionAST>(std::move(Proto), std::move(E));
-    }
     return nullptr;
 }
 

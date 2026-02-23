@@ -48,14 +48,26 @@ public:
     void print(int indent) override;
 };
 
+/// UnaryExprAST - Expression class for a unary operator.
+class UnaryExprAST : public ExprAST {
+    char Op;
+    std::unique_ptr<ExprAST> Operand;
+
+public:
+    UnaryExprAST(char Op, std::unique_ptr<ExprAST> Operand);
+
+    llvm::Value *codegen() override;
+
+    void print(int indent) override;
+};
+
 /// BinaryExprAST - Expression class for a binary operator.
 class BinaryExprAST : public ExprAST {
     char Op;
     std::unique_ptr<ExprAST> LHS, RHS;
 
 public:
-    BinaryExprAST(char Op, std::unique_ptr<ExprAST> LHS,
-                  std::unique_ptr<ExprAST> RHS);
+    BinaryExprAST(char Op, std::unique_ptr<ExprAST> LHS, std::unique_ptr<ExprAST> RHS);
 
     llvm::Value *codegen() override;
 
@@ -68,25 +80,31 @@ class CallExprAST : public ExprAST {
     std::vector<std::unique_ptr<ExprAST>> Args;
 
 public:
-    CallExprAST(const std::string &Callee,
-                std::vector<std::unique_ptr<ExprAST> > Args);
+    CallExprAST(const std::string &Callee, std::vector<std::unique_ptr<ExprAST> > Args);
 
     llvm::Value *codegen() override;
 
     void print(int indent) override;
 };
 
-/// PrototypeAST - This class represents the "prototype" for a function,
-/// which captures its name, and its argument names (thus implicitly the number
-/// of arguments the function takes).
+/// PrototypeAST - This class represents the "prototype" for a function, which captures its name,
+/// and its argument names (thus implicitly the number of arguments the function takes).
+/// As well as if it is an operator
 class PrototypeAST {
     std::string Name;
     std::vector<std::string> Args;
+    char Operator;
+    unsigned Precedence;
 
 public:
-    PrototypeAST(const std::string &Name, std::vector<std::string> Args);
+    PrototypeAST(const std::string &Name, std::vector<std::string> Args, char Operator,
+                 unsigned Precedence);
 
     const std::string &getName() const;
+    const char getOperator() const;
+    bool isUnaryOp() const;
+    bool isBinaryOp() const;
+    unsigned getBinaryPrecedence() const;
 
     llvm::Function *codegen();
 
