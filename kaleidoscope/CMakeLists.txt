@@ -86,7 +86,7 @@ foreach(LLVMLIB ${LLVM_LINK_LIBRARIES})
 endforeach()
 
 target_link_libraries(kaleidoscopec PRIVATE ZLIB::ZLIB)
-target_link_libraries(kaleidoscopec PRIVATE zstd::libzstd_shared)
+target_link_libraries(kaleidoscopec PRIVATE zstd::libzstd_static)
 
 enable_testing()
 
