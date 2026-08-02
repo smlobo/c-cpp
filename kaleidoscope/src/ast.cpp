@@ -40,10 +40,14 @@ VariableExprAST::VariableExprAST(const std::string &Name) : Name(Name) {}
 
 llvm::Value *VariableExprAST::codegen() {
     // Look this variable up in the function.
-    llvm::Value *V = NamedValues[Name];
-    if (!V)
+    llvm::AllocaInst *A = NamedValues[Name];
+    if (!A)
         LogErrorV("Unknown variable name");
-    return V;
+    return Builder->CreateLoad(A->getAllocatedType(), A, Name.c_str());
+}
+
+std::string VariableExprAST::getName() const {
+    return Name;
 }
 
 void VariableExprAST::print(int indent) {
@@ -86,6 +90,27 @@ BinaryExprAST::BinaryExprAST(char Op, std::unique_ptr<ExprAST> LHS, std::unique_
     : Op(Op), LHS(std::move(LHS)), RHS(std::move(RHS)) {}
 
 llvm::Value *BinaryExprAST::codegen() {
+    // Special case - the assignment operator
+    if (Op == '=') {
+        // LHS must be a variable, not an expression
+        VariableExprAST *LHSE = static_cast<VariableExprAST*>(LHS.get());
+        if (!LHSE)
+            return LogErrorV("destination of '=' must be a variable");
+
+        // Codegen the RHS.
+        llvm::Value *Val = RHS->codegen();
+        if (!Val)
+            return nullptr;
+
+        // Look up the name.
+        llvm::AllocaInst *Alloca = NamedValues[LHSE->getName()];
+        if (!Alloca)
+            return LogErrorV("Unknown variable name");
+
+        Builder->CreateStore(Val, Alloca);
+        return Val;
+    }
+
     llvm::Value *L = LHS->codegen();
     llvm::Value *R = RHS->codegen();
     if (!L || !R)
@@ -107,7 +132,7 @@ llvm::Value *BinaryExprAST::codegen() {
             break;
     }
 
-    // Uer defined operator
+    // User defined operator
     llvm::Function *function = TheModule->getFunction(std::string("binary") + Op);
     if (!function)
         return LogErrorV("binary operator not found");
@@ -244,8 +269,16 @@ llvm::Function *FunctionAST::codegen() {
 
     // Record the function arguments in the NamedValues map.
     NamedValues.clear();
-    for (auto &Arg : TheFunction->args())
-        NamedValues[std::string(Arg.getName())] = &Arg;
+    for (auto &Arg : TheFunction->args()) {
+        // Create an alloca in the function begin block
+        llvm::AllocaInst *alloca = CreateEntryBlockAlloca(TheFunction, Arg.getName());
+
+        // Store the initial arg value
+        Builder->CreateStore(&Arg, alloca);
+
+        // Add the argument to the variables symbol table
+        NamedValues[std::string(Arg.getName())] = alloca;
+    }
 
     // Iterate over all but last expression
     for (std::size_t i = 0; i < BodyExprs.size() - 1; ++i) {
@@ -357,13 +390,19 @@ ForExprAST::ForExprAST(std::string &VarName, std::unique_ptr<ExprAST> Start,
       Stride(std::move(Stride)), Body(std::move(Body)) {}
 
 llvm::Value *ForExprAST::codegen() {
+    llvm::BasicBlock *loopHeaderBB = Builder->GetInsertBlock();
+    llvm::Function *TheFunction = loopHeaderBB->getParent();
+
+    // Create an alloca for the variable in the function entry block.
+    llvm::AllocaInst *Alloca = CreateEntryBlockAlloca(TheFunction, VarName);
+
     // Emit the start code first, without 'variable' in scope.
     llvm::Value *StartVal = Start->codegen();
     if (!StartVal)
         return nullptr;
 
-    llvm::BasicBlock *loopHeaderBB = Builder->GetInsertBlock();
-    llvm::Function *TheFunction = loopHeaderBB->getParent();
+    // Store the value into the alloca.
+    Builder->CreateStore(StartVal, Alloca);
 
     // Create block for the loop body
     llvm::BasicBlock *loopBodyBB = llvm::BasicBlock::Create(*TheContext, "loopbody", TheFunction);
@@ -374,15 +413,10 @@ llvm::Value *ForExprAST::codegen() {
     // Set insertion of the loop body
     Builder->SetInsertPoint(loopBodyBB);
 
-    // Phi for loop index
-    llvm::PHINode *loopIndex = Builder->CreatePHI(llvm::Type::getDoubleTy(*TheContext),
-    2, "loopindex");
-    loopIndex->addIncoming(StartVal, loopHeaderBB);
-
     // Within the loop, the variable is defined equal to the PHI node.  If it
     // shadows an existing variable, we have to restore it, so save it now.
-    llvm::Value *OldVal = NamedValues[VarName];
-    NamedValues[VarName] = loopIndex;
+    llvm::AllocaInst *OldVal = NamedValues[VarName];
+    NamedValues[VarName] = Alloca;
 
     // Emit the loop body
     if (!Body->codegen())
@@ -393,7 +427,12 @@ llvm::Value *ForExprAST::codegen() {
     if (!StrideVal)
         return nullptr;
 
-    llvm::Value *NextVal = Builder->CreateFAdd(loopIndex, StrideVal, "nextloopindex");
+    // Reload, increment, and restore the alloca.  This handles the case where
+    // the body of the loop mutates the variable.
+    llvm::Value *CurVar = Builder->CreateLoad(Alloca->getAllocatedType(), Alloca,
+                                        VarName.c_str());
+    llvm::Value *NextVar = Builder->CreateFAdd(CurVar, StrideVal, "nextvar");
+    Builder->CreateStore(NextVar, Alloca);
 
     // Compute the end condition.
     llvm::Value *EndCond = End->codegen();
@@ -403,10 +442,6 @@ llvm::Value *ForExprAST::codegen() {
     // Convert condition to a bool by comparing non-equal to 0.0.
     EndCond = Builder->CreateFCmpONE(
         EndCond, llvm::ConstantFP::get(*TheContext, llvm::APFloat(0.0)), "loopcond");
-
-    // loopBodyBB could be changed by codegen. Get if to complete the 'loopindex' Phi node
-    llvm::BasicBlock *loopBodyEndBB = Builder->GetInsertBlock();
-    loopIndex->addIncoming(NextVal, loopBodyEndBB);
 
     // Create block for the loop exit
     llvm::BasicBlock *loopExitBB = llvm::BasicBlock::Create(*TheContext, "loopexit", TheFunction);

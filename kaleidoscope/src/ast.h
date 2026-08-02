@@ -44,6 +44,7 @@ public:
     VariableExprAST(const std::string &Name);
 
     llvm::Value *codegen() override;
+    std::string getName() const;
 
     void print(int indent) override;
 };

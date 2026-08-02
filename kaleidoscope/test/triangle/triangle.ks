@@ -3,7 +3,7 @@
 extern putchard(x);
 
 def drawrow(n)
-    for i = 1, i < n, 1 in
+    for i = 0, i < n, 1 in
         putchard(88)
     putchard(10)
 

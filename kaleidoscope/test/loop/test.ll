@@ -14,7 +14,7 @@ entry:
 
 define i32 @main() {
 entry:
-    %r1 = call double (double) @printZ(double 4.000000e+00)
+    %r1 = call double (double) @printZ(double 5.000000e+00)
     call i32 (ptr, ...) @printf(ptr getelementptr (ptr, ptr @fmt))
     ret i32 0
 }

@@ -11,6 +11,6 @@ entry:
 
 define i32 @main() {
 entry:
-    %r1 = call double (double) @triangle(double 4.000000e+00)
+    %r1 = call double (double) @triangle(double 5.000000e+00)
     ret i32 0
 }

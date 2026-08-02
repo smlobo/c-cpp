@@ -30,6 +30,7 @@ int getNextToken() {
 /// BinopPrecedence - This holds the precedence for each binary operator that is
 /// defined.
 std::map<char, unsigned> BinopPrecedence = {
+    {'=', 2},
     {'<', 10},
     {'+', 20},
     {'-', 20},

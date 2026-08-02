@@ -14,6 +14,7 @@
 #include <Transforms/Scalar/Reassociate.h>
 #include <Transforms/Scalar/GVN.h>
 #include <Transforms/Scalar/SimplifyCFG.h>
+#include <Transforms/Utils/Mem2Reg.h>
 
 #include <Passes/PassBuilder.h>
 
@@ -117,6 +118,8 @@ static void InitializeModuleAndManagers(std::string namePrefix) {
     // TheSI->registerCallbacks(*ThePIC, TheMAM.get());
 
     // Add transform passes.
+    // Promote allocas to registers.
+    TheFPM->addPass(llvm::PromotePass());
     // Do simple "peephole" optimizations and bit-twiddling optzns.
     TheFPM->addPass(llvm::InstCombinePass());
     // Reassociate expressions.

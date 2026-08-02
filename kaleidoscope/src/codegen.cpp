@@ -16,7 +16,7 @@
 std::unique_ptr<llvm::LLVMContext> TheContext;
 std::unique_ptr<llvm::IRBuilder<>> Builder;
 std::unique_ptr<llvm::Module> TheModule;
-std::map<std::string, llvm::Value *> NamedValues;
+std::map<std::string, llvm::AllocaInst*> NamedValues;
 
 //===----------------------------------------------------------------------===//
 // Codegen
@@ -36,4 +36,9 @@ void FunctionCodegen(std::unique_ptr<FunctionAST> FnAST) {
         // Skip token for error recovery.
         getNextToken();
     }
+}
+
+llvm::AllocaInst* CreateEntryBlockAlloca(llvm::Function *theFunction, llvm::StringRef varName) {
+    llvm::IRBuilder<> tempBuilder(&theFunction->getEntryBlock(), theFunction->getEntryBlock().begin());
+    return tempBuilder.CreateAlloca(llvm::Type::getDoubleTy(*TheContext), nullptr, varName);
 }
