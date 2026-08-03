@@ -42,7 +42,7 @@ llvm::Value *VariableExprAST::codegen() {
     // Look this variable up in the function.
     llvm::AllocaInst *A = NamedValues[Name];
     if (!A)
-        LogErrorV("Unknown variable name");
+        LogErrorV(("[VariableExprAST] Unknown variable name " + Name).c_str());
     return Builder->CreateLoad(A->getAllocatedType(), A, Name.c_str());
 }
 
@@ -89,11 +89,15 @@ void UnaryExprAST::print(int indent) {
 BinaryExprAST::BinaryExprAST(char Op, std::unique_ptr<ExprAST> LHS, std::unique_ptr<ExprAST> RHS)
     : Op(Op), LHS(std::move(LHS)), RHS(std::move(RHS)) {}
 
+ExprAST *BinaryExprAST::getLHS() const {
+    return LHS.get();
+}
+
 llvm::Value *BinaryExprAST::codegen() {
     // Special case - the assignment operator
     if (Op == '=') {
         // LHS must be a variable, not an expression
-        VariableExprAST *LHSE = static_cast<VariableExprAST*>(LHS.get());
+        auto *LHSE = dynamic_cast<VariableExprAST*>(LHS.get());
         if (!LHSE)
             return LogErrorV("destination of '=' must be a variable");
 
@@ -105,7 +109,7 @@ llvm::Value *BinaryExprAST::codegen() {
         // Look up the name.
         llvm::AllocaInst *Alloca = NamedValues[LHSE->getName()];
         if (!Alloca)
-            return LogErrorV("Unknown variable name");
+            return LogErrorV(("[BinaryExprAST] Unknown variable name " + LHSE->getName()).c_str());
 
         Builder->CreateStore(Val, Alloca);
         return Val;
@@ -473,4 +477,52 @@ void ForExprAST::print(int indent) {
     End->print(indent + 2);
     Stride->print(indent + 2);
     Body->print(indent + 2);
+}
+
+VarExprAST::VarExprAST(std::vector<std::unique_ptr<ExprAST>> Vars)
+    : Vars(std::move(Vars)) {}
+
+llvm::Value *VarExprAST::codegen() {
+    llvm::BasicBlock *loopHeaderBB = Builder->GetInsertBlock();
+    llvm::Function *TheFunction = loopHeaderBB->getParent();
+
+    llvm::Value *lastVarVal = nullptr;
+
+    // iterate to initialize the NamedValues
+    for (const auto& Var : Vars) {
+        // Expression must be either binary or an unitialized variable
+        auto *binaryExpr = dynamic_cast<BinaryExprAST*>(Var.get());
+        auto *variableExpr = dynamic_cast<VariableExprAST*>(Var.get());
+        if (!binaryExpr && !variableExpr) {
+            return LogErrorV("var expression is not binary or variable");
+        }
+        // Binary exp - LHS must be a variable, not an expression
+        if (binaryExpr) {
+            variableExpr = dynamic_cast<VariableExprAST*>(binaryExpr->getLHS());
+            if (!variableExpr)
+                return LogErrorV("destination of '=' must be a variable");
+        }
+
+        // Create an alloca for the variable in the function entry block.
+        llvm::AllocaInst *alloca = CreateEntryBlockAlloca(TheFunction, variableExpr->getName());
+
+        // Add to the variables symbol table
+        NamedValues[variableExpr->getName()] = alloca;
+
+        // codegen the variable expression
+        lastVarVal = Var->codegen();
+    }
+
+    return lastVarVal;
+}
+
+void VarExprAST::print(int indent) {
+    llvm::errs().indent(indent);
+    llvm::errs().changeColor(llvm::raw_ostream::RED, true);
+    llvm::errs() << "VarExprAST: ";
+    llvm::errs().resetColor();
+    llvm::errs() << "\n";
+    for (const auto& Var : Vars) {
+        Var->print(indent + 2);
+    }
 }

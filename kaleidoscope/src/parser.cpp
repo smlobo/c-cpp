@@ -181,7 +181,7 @@ static std::unique_ptr<ExprAST> ParseForExpr() {
     }
 
     if (CurToken != tok_in)
-        return LogError("expected in");
+        return LogError("expected 'in' when parsing 'for'");
     // eat in
     getNextToken();
 
@@ -191,6 +191,41 @@ static std::unique_ptr<ExprAST> ParseForExpr() {
 
     return std::make_unique<ForExprAST>(IdName, std::move(Start), std::move(End),
         std::move(Stride), std::move(Body));
+}
+
+/// varexpr ::= 'var' <expr1>, [exprn] 'in' expression
+static std::unique_ptr<ExprAST> ParseVarExpr() {
+    // eat var
+    getNextToken();
+
+    // vector of variable expressions
+    std::vector<std::unique_ptr<ExprAST>> Vars;
+
+    // expect at least 1 identifier & expression
+    if (CurToken != tok_identifier)
+        return LogError("expected identifier after var");
+
+    auto expr1 = ParseExpression();
+    if (!expr1)
+        return nullptr;
+    Vars.push_back(std::move(expr1));
+
+    while (CurToken == ',') {
+        // eat ,
+        getNextToken();
+
+        auto exprn = ParseExpression();
+        if (!exprn)
+            return nullptr;
+        Vars.push_back(std::move(exprn));
+    }
+
+    if (CurToken != tok_in)
+        return LogError("expected 'in' when parsing 'var'");
+    // eat in
+    getNextToken();
+
+    return std::make_unique<VarExprAST>(std::move(Vars));
 }
 
 /// primary
@@ -211,6 +246,8 @@ static std::unique_ptr<ExprAST> ParsePrimary() {
             return ParseIfExpr();
         case tok_for:
             return ParseForExpr();
+        case tok_var:
+            return ParseVarExpr();
     }
 }
 
@@ -343,7 +380,9 @@ static std::unique_ptr<PrototypeAST> ParsePrototype() {
 
 /// definition ::= 'def' prototype expression
 static std::unique_ptr<FunctionAST> ParseDefinition() {
-    getNextToken(); // eat def.
+    // eat def
+    getNextToken();
+
     auto Proto = ParsePrototype();
     if (!Proto)
         return nullptr;

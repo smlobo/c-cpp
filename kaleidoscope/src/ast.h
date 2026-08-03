@@ -70,6 +70,7 @@ class BinaryExprAST : public ExprAST {
 public:
     BinaryExprAST(char Op, std::unique_ptr<ExprAST> LHS, std::unique_ptr<ExprAST> RHS);
 
+    ExprAST *getLHS() const;
     llvm::Value *codegen() override;
 
     void print(int indent) override;
@@ -147,8 +148,20 @@ class ForExprAST : public ExprAST {
     std::unique_ptr<ExprAST> Start, End, Stride, Body;
 
 public:
-        ForExprAST(std::string &VarName, std::unique_ptr<ExprAST> Start, std::unique_ptr<ExprAST> End,
-                   std::unique_ptr<ExprAST> Stride, std::unique_ptr<ExprAST> Body);
+    ForExprAST(std::string &VarName, std::unique_ptr<ExprAST> Start, std::unique_ptr<ExprAST> End,
+               std::unique_ptr<ExprAST> Stride, std::unique_ptr<ExprAST> Body);
+
+    llvm::Value *codegen() override;
+
+    void print(int indent) override;
+};
+
+/// VarAST - Expression class for var/in
+class VarExprAST : public ExprAST {
+    std::vector<std::unique_ptr<ExprAST>> Vars;
+
+public:
+    VarExprAST(std::vector<std::unique_ptr<ExprAST>> Vars);
 
     llvm::Value *codegen() override;
 

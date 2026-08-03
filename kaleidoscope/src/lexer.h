@@ -30,6 +30,9 @@ enum Token {
     // operators
     tok_binary = -11,
     tok_unary = -12,
+
+    // variable declaration
+    tok_var = -13,
 };
 
 extern std::string IdentifierStr; // Filled in if tok_identifier
