@@ -1,14 +1,15 @@
 //
-// Created by Sheldon Lobo on 2/14/26.
+// Created by Sheldon Lobo on 8/10/26.
 //
 
-#ifndef KALEIDOSCOPE_AST_H
-#define KALEIDOSCOPE_AST_H
+#ifndef MLIR_TOY_SRC_AST_H
+#define MLIR_TOY_SRC_AST_H
 
+#include <memory>
 #include <string>
 #include <vector>
 
-#include <IR/Value.h>
+#include "llvm/IR/Value.h"
 
 //===----------------------------------------------------------------------===//
 // Abstract Syntax Tree (aka Parse Tree)
@@ -17,7 +18,29 @@
 /// ExprAST - Base class for all expression nodes.
 class ExprAST {
 public:
+    enum ExprASTKind {
+        Expr_VarDecl,
+        Expr_Return,
+        Expr_Num,
+        Expr_Literal,
+        Expr_Var,
+        Expr_UnaryOp,
+        Expr_BinaryOp,
+        Expr_Call,
+        Expr_Print,
+        Expr_If,
+        Expr_For,
+    };
+
+private:
+    ExprASTKind Kind;
+
+public:
+    ExprAST(ExprASTKind Kind);
+
     virtual ~ExprAST() = default;
+
+    ExprASTKind getKind() const;
 
     virtual void print(int indent) = 0;
 };
@@ -41,6 +64,8 @@ public:
     VariableExprAST(const std::string &Name);
     VariableExprAST(const std::string &Name, std::vector<unsigned> Shape);
 
+    std::string getName() const;
+
     void print(int indent) override;
 };
 
@@ -63,6 +88,10 @@ class BinaryExprAST : public ExprAST {
 public:
     BinaryExprAST(char Op, std::unique_ptr<ExprAST> LHS, std::unique_ptr<ExprAST> RHS);
 
+    char getOp() const;
+    ExprAST* getLHS() const;
+    ExprAST* getRHS() const;
+
     void print(int indent) override;
 };
 
@@ -73,6 +102,9 @@ class CallExprAST : public ExprAST {
 
 public:
     CallExprAST(const std::string &Callee, std::vector<std::unique_ptr<ExprAST> > Args);
+
+    std::string getCallee() const;
+    const std::vector<std::unique_ptr<ExprAST>>* getArgs() const;
 
     void print(int indent) override;
 };
@@ -91,6 +123,7 @@ public:
                  unsigned Precedence);
 
     const std::string &getName() const;
+    const std::vector<std::string> *getArgs() const;
     const char getOperator() const;
     bool isUnaryOp() const;
     bool isBinaryOp() const;
@@ -107,6 +140,9 @@ class FunctionAST {
 public:
     FunctionAST(std::unique_ptr<PrototypeAST> Proto,
                 std::vector<std::unique_ptr<ExprAST>> BodyExprs);
+
+    const PrototypeAST *getProto() const;
+    const std::vector<std::unique_ptr<ExprAST>> *getBody() const;
 
     void print(int indent);
 };
@@ -135,11 +171,11 @@ public:
 };
 
 /// VarExprAST - Expression class for var/in
-class VarExprAST : public ExprAST {
+class VarDeclExprAST : public ExprAST {
     std::unique_ptr<ExprAST> Var;
 
 public:
-    VarExprAST(std::unique_ptr<ExprAST> Var);
+    VarDeclExprAST(std::unique_ptr<ExprAST> Var);
 
     void print(int indent) override;
 };
@@ -150,6 +186,8 @@ class ReturnExprAST : public ExprAST {
 
 public:
     ReturnExprAST(std::unique_ptr<ExprAST> Return);
+
+    ExprAST* getExpr() const;
 
     void print(int indent) override;
 };
@@ -164,4 +202,4 @@ public:
     void print(int indent) override;
 };
 
-#endif //KALEIDOSCOPE_AST_H
+#endif // MLIR_TOY_SRC_AST_H

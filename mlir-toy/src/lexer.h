@@ -1,9 +1,11 @@
 //
-// Created by Sheldon Lobo on 2/14/26.
+// Created by Sheldon Lobo on 8/10/26.
 //
 
-#ifndef KALEIDOSCOPE_LEXER_H
-#define KALEIDOSCOPE_LEXER_H
+#ifndef MLIR_TOY_SRC_LEXER_H
+#define MLIR_TOY_SRC_LEXER_H
+
+#include <string>
 
 // The lexer returns tokens [0-255] if it is an unknown character, otherwise one
 // of these for known things.
@@ -42,4 +44,4 @@ extern std::string IdentifierStr; // Filled in if tok_identifier
 extern double NumVal; // Filled in if tok_number
 int gettok();
 
-#endif //KALEIDOSCOPE_LEXER_H
+#endif // MLIR_TOY_SRC_LEXER_H

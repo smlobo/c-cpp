@@ -1,17 +1,18 @@
 //
-// Created by Sheldon Lobo on 2/15/26.
+// Created by Sheldon Lobo on 8/10/26.
 //
 
-#include <fstream>
-#include <string>
-#include <iostream>
+#include "parser.h"
+
 #include <map>
 #include <memory>
-#include <IR/Function.h>
+#include <string>
+#include <utility>
+#include <vector>
 
-#include "lexer.h"
 #include "ast.h"
 #include "errors.h"
+#include "lexer.h"
 #include "main.h"
 
 //===----------------------------------------------------------------------===//
@@ -223,7 +224,7 @@ static std::unique_ptr<ExprAST> ParseVarExpr() {
     if (!expr)
         return nullptr;
 
-    return std::make_unique<VarExprAST>(std::move(expr));
+    return std::make_unique<VarDeclExprAST>(std::move(expr));
 }
 
 /// returnexpr ::= 'return' expression

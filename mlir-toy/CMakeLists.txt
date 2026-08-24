@@ -11,68 +11,38 @@ add_executable(mlir-toyc
         src/ast.cpp
         src/errors.cpp
         src/parser.cpp
+        src/Dialect.cpp
+        src/MLIRGen.cpp
 )
 
 target_compile_features(mlir-toyc PRIVATE cxx_std_20)
 
+# Since llvm by default is compiled without RTTI
+target_compile_options(mlir-toyc PRIVATE -fno-rtti)
+
 set(LLVM_AREA $ENV{HOME}/repos/llvm-project)
 
-set(LLVM_INCLUDE_LLVM ${LLVM_AREA}/llvm/include/llvm)
 set(LLVM_INCLUDE ${LLVM_AREA}/llvm/include)
 set(LLVM_BUILD_INCLUDE ${LLVM_AREA}/build/include)
+set(MLIR_INCLUDE ${LLVM_AREA}/mlir/include)
+set(MLIR_BUILD_INCLUDE ${LLVM_AREA}/build/tools/mlir/include)
 
 target_include_directories(mlir-toyc
-        PRIVATE ${LLVM_INCLUDE_LLVM} ${LLVM_INCLUDE} ${LLVM_BUILD_INCLUDE})
+        PRIVATE ${LLVM_INCLUDE} ${LLVM_BUILD_INCLUDE} ${MLIR_INCLUDE}
+                ${MLIR_BUILD_INCLUDE} ${CMAKE_CURRENT_BINARY_DIR}/include)
 
 set(LLVM_LINK_LIBRARIES
-        Core
-        Support
-        Demangle
-        BinaryFormat
-        Remarks
-        BitstreamReader
-        TargetParser
-        Passes
-        CodeGen
-        CGData
-        CodeGenTypes
-        Analysis
-        TransformUtils
-        MC
-        DebugInfoDWARFLowLevel
-        Object
-        Target
-        ipo
-        ProfileData
-        DebugInfoDWARF
-        ScalarOpts
-        Linker
-        Instrumentation
-        TextAPI
-        FrontendHLSL
-        ObjCARCOpts
-        HipStdPar
-        GlobalISel
-        BitReader
-        BitWriter
-        Vectorize
-        SandboxIR
-        AggressiveInstCombine
-        Coroutines
-        FrontendOpenMP
-        IRReader
-        MCParser
-        IRPrinter
-        InstCombine
-        CFGuard
-        AsmParser
-        FrontendAtomic
-        FrontendOffloading
-        ObjectYAML
+        LLVMCore
+        LLVMSupport
+        LLVMDemangle
+        MLIRSupport
+        MLIRIR
+        MLIRFunctionInterfaces
+        MLIRCallInterfaces
 )
 
 foreach(LLVMLIB ${LLVM_LINK_LIBRARIES})
-    set(LLVMLIB_NAME LLVM${LLVMLIB})
+    set(LLVMLIB_NAME ${LLVMLIB})
     set(LLVMLIB_FULL_NAME lib${LLVMLIB_NAME}.a)
     message(STATUS "LLVM Lib: ${LLVMLIB} -> ${LLVMLIB_NAME}")
     add_library(${LLVMLIB_NAME} STATIC IMPORTED)
@@ -87,3 +57,4 @@ endforeach()
 target_link_libraries(mlir-toyc PRIVATE ZLIB::ZLIB)
 target_link_libraries(mlir-toyc PRIVATE zstd::libzstd_static)
 
+add_subdirectory(include)

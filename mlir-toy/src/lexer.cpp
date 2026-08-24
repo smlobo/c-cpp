@@ -1,14 +1,11 @@
 //
-// Created by Sheldon Lobo on 2/14/26.
+// Created by Sheldon Lobo on 8/10/26.
 //
+
+#include "lexer.h"
 
 #include <fstream>
 #include <string>
-#include <map>
-#include <memory>
-
-#include "lexer.h"
-#include "ast.h"
 
 extern std::ifstream inputFile;
 

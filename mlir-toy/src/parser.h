@@ -1,11 +1,14 @@
 //
-// Created by Sheldon Lobo on 2/15/26.
+// Created by Sheldon Lobo on 8/10/26.
 //
 
-#ifndef KALEIDOSCOPE_PARSER_H
-#define KALEIDOSCOPE_PARSER_H
+#ifndef MLIR_TOY_SRC_PARSER_H
+#define MLIR_TOY_SRC_PARSER_H
 
 #include <map>
+#include <memory>
+
+#include "ast.h"
 
 extern int CurToken;
 extern int getNextToken();
@@ -15,4 +18,4 @@ extern void HandleExtern();
 
 extern std::map<char, unsigned> BinopPrecedence;
 
-#endif //KALEIDOSCOPE_PARSER_H
+#endif // MLIR_TOY_SRC_PARSER_H

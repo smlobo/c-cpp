@@ -1,21 +1,25 @@
 //
-// Created by Sheldon Lobo on 2/14/26.
+// Created by Sheldon Lobo on 8/10/26.
 //
 
-#include <string>
-#include <vector>
-#include <iostream>
-
-#include <llvm/Support/raw_ostream.h>
-
 #include "ast.h"
-#include "main.h"
+
+#include <format>
+#include <utility>
+
+#include "llvm/Support/raw_ostream.h"
 
 //===----------------------------------------------------------------------===//
 // Abstract Syntax Tree (aka Parse Tree)
 //===----------------------------------------------------------------------===//
 
-NumberExprAST::NumberExprAST(double Val) : Val(Val) {}
+ExprAST::ExprAST(ExprASTKind Kind) : Kind(Kind) {}
+
+ExprAST::ExprASTKind ExprAST::getKind() const {
+    return Kind;
+}
+
+NumberExprAST::NumberExprAST(double Val) : ExprAST(Expr_Num), Val(Val) {}
 
 void NumberExprAST::print(int indent) {
     llvm::errs().indent(indent);
@@ -27,10 +31,15 @@ void NumberExprAST::print(int indent) {
 }
 
 VariableExprAST::VariableExprAST(const std::string &Name)
-    : Name(Name), Shape(std::vector<unsigned>()) {}
+    : ExprAST(Expr_Var), Name(Name), Shape(std::vector<unsigned>()) {}
 
-VariableExprAST::VariableExprAST(const std::string &Name, std::vector<unsigned> Shape)
-    : Name(Name), Shape(std::move(Shape)) {}
+VariableExprAST::VariableExprAST(const std::string &Name,
+        std::vector<unsigned> Shape)
+    : ExprAST(Expr_Var), Name(Name), Shape(std::move(Shape)) {}
+
+std::string VariableExprAST::getName() const {
+    return Name;
+}
 
 void VariableExprAST::print(int indent) {
     llvm::errs().indent(indent);
@@ -42,7 +51,7 @@ void VariableExprAST::print(int indent) {
 }
 
 UnaryExprAST::UnaryExprAST(char Op, std::unique_ptr<ExprAST> Operand)
-    : Op(Op), Operand(std::move(Operand)) {}
+    : ExprAST(Expr_UnaryOp), Op(Op), Operand(std::move(Operand)) {}
 
 void UnaryExprAST::print(int indent) {
     llvm::errs().indent(indent);
@@ -54,8 +63,22 @@ void UnaryExprAST::print(int indent) {
     Operand->print(indent + 2);
 }
 
-BinaryExprAST::BinaryExprAST(char Op, std::unique_ptr<ExprAST> LHS, std::unique_ptr<ExprAST> RHS)
-    : Op(Op), LHS(std::move(LHS)), RHS(std::move(RHS)) {}
+BinaryExprAST::BinaryExprAST(char Op, std::unique_ptr<ExprAST> LHS,
+        std::unique_ptr<ExprAST> RHS)
+    : ExprAST(Expr_BinaryOp), Op(Op), LHS(std::move(LHS)),
+        RHS(std::move(RHS)) {}
+
+char BinaryExprAST::getOp() const {
+    return Op;
+}
+
+ExprAST *BinaryExprAST::getLHS() const {
+    return LHS.get();
+}
+
+ExprAST *BinaryExprAST::getRHS() const {
+    return RHS.get();
+}
 
 void BinaryExprAST::print(int indent) {
     llvm::errs().indent(indent);
@@ -69,8 +92,16 @@ void BinaryExprAST::print(int indent) {
 }
 
 CallExprAST::CallExprAST(const std::string &Callee,
-                         std::vector<std::unique_ptr<ExprAST>> Args)
-    : Callee(Callee), Args(std::move(Args)) {}
+        std::vector<std::unique_ptr<ExprAST>> Args)
+    : ExprAST(Expr_Call), Callee(Callee), Args(std::move(Args)) {}
+
+std::string CallExprAST::getCallee() const {
+    return Callee;
+}
+
+const std::vector<std::unique_ptr<ExprAST>>* CallExprAST::getArgs() const {
+    return &Args;
+}
 
 void CallExprAST::print(int indent) {
     llvm::errs().indent(indent);
@@ -84,12 +115,17 @@ void CallExprAST::print(int indent) {
     }
 }
 
-PrototypeAST::PrototypeAST(const std::string &Name, std::vector<std::string> Args, char Operator,
-                           unsigned Precedence)
-    : Name(Name), Args(std::move(Args)), Operator(Operator), Precedence(Precedence) {}
+PrototypeAST::PrototypeAST(const std::string &Name, std::vector<std::string> Args,
+        char Operator, unsigned Precedence)
+    : Name(Name), Args(std::move(Args)), Operator(Operator),
+        Precedence(Precedence) {}
 
 const std::string &PrototypeAST::getName() const {
     return Name;
+}
+
+const std::vector<std::string> *PrototypeAST::getArgs() const {
+    return &Args;
 }
 
 const char PrototypeAST::getOperator() const {
@@ -122,8 +158,16 @@ void PrototypeAST::print(int indent) {
 }
 
 FunctionAST::FunctionAST(std::unique_ptr<PrototypeAST> Proto,
-                         std::vector<std::unique_ptr<ExprAST>> BodyExprs)
+        std::vector<std::unique_ptr<ExprAST>> BodyExprs)
     : Proto(std::move(Proto)), BodyExprs(std::move(BodyExprs)) {}
+
+const PrototypeAST *FunctionAST::getProto() const {
+    return Proto.get();
+}
+
+const std::vector<std::unique_ptr<ExprAST>> *FunctionAST::getBody() const {
+    return &BodyExprs;
+}
 
 void FunctionAST::print(int indent) {
     llvm::errs().indent(indent);
@@ -137,8 +181,9 @@ void FunctionAST::print(int indent) {
 }
 
 IfExprAST::IfExprAST(std::unique_ptr<ExprAST> Cond, std::unique_ptr<ExprAST> Then,
-                     std::unique_ptr<ExprAST> Else)
-    : Cond(std::move(Cond)), Then(std::move(Then)), Else(std::move(Else)) {}
+        std::unique_ptr<ExprAST> Else)
+    : ExprAST(Expr_If), Cond(std::move(Cond)), Then(std::move(Then)),
+        Else(std::move(Else)) {}
 
 void IfExprAST::print(int indent) {
     llvm::errs().indent(indent);
@@ -151,10 +196,11 @@ void IfExprAST::print(int indent) {
 }
 
 ForExprAST::ForExprAST(std::string &VarName, std::unique_ptr<ExprAST> Start,
-                       std::unique_ptr<ExprAST> End, std::unique_ptr<ExprAST> Stride,
-                       std::unique_ptr<ExprAST> Body)
-    : VarName(VarName), Start(std::move(Start)), End(std::move(End)),
-      Stride(std::move(Stride)), Body(std::move(Body)) {}
+        std::unique_ptr<ExprAST> End, std::unique_ptr<ExprAST> Stride,
+        std::unique_ptr<ExprAST> Body)
+    : ExprAST(Expr_For), VarName(VarName), Start(std::move(Start)),
+        End(std::move(End)), Stride(std::move(Stride)),
+        Body(std::move(Body)) {}
 
 void ForExprAST::print(int indent) {
     llvm::errs().indent(indent);
@@ -169,10 +215,10 @@ void ForExprAST::print(int indent) {
     Body->print(indent + 2);
 }
 
-VarExprAST::VarExprAST(std::unique_ptr<ExprAST> Var)
-    : Var(std::move(Var)) {}
+VarDeclExprAST::VarDeclExprAST(std::unique_ptr<ExprAST> Var)
+    : ExprAST(Expr_VarDecl), Var(std::move(Var)) {}
 
-void VarExprAST::print(int indent) {
+void VarDeclExprAST::print(int indent) {
     llvm::errs().indent(indent);
     llvm::errs().changeColor(llvm::raw_ostream::RED, true);
     llvm::errs() << "VarExprAST: ";
@@ -182,7 +228,11 @@ void VarExprAST::print(int indent) {
 }
 
 ReturnExprAST::ReturnExprAST(std::unique_ptr<ExprAST> Return)
-    : Return(std::move(Return)) {}
+    : ExprAST(Expr_Return), Return(std::move(Return)) {}
+
+ExprAST* ReturnExprAST::getExpr() const {
+    return Return.get();
+}
 
 void ReturnExprAST::print(int indent) {
     llvm::errs().indent(indent);
@@ -193,7 +243,7 @@ void ReturnExprAST::print(int indent) {
 }
 
 LiteralExprAST::LiteralExprAST(std::vector<std::unique_ptr<ExprAST>> Elements)
-    : Elements(std::move(Elements)) {}
+    : ExprAST(Expr_Literal), Elements(std::move(Elements)) {}
 
 void LiteralExprAST::print(int indent) {
     llvm::errs().indent(indent);

@@ -1,18 +1,25 @@
 //
-// Created by Sheldon Lobo on 2/14/26.
+// Created by Sheldon Lobo on 8/10/26.
 //
 
-#include <fstream>
-#include <string>
-#include <iostream>
+#include "main.h"
+
 #include <getopt.h>
 
-#include <IR/PassManager.h>
+#include <cstdlib>
+#include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <memory>
+#include <string>
+#include <vector>
 
-#include <Passes/PassBuilder.h>
+#include "mlir/IR/MLIRContext.h"
 
 #include "ast.h"
+#include "Dialect.h"
 #include "lexer.h"
+#include "MLIRGen.h"
 #include "parser.h"
 
 std::ifstream inputFile;
@@ -92,6 +99,19 @@ static void InitializeModuleAndManagers(std::string namePrefix) {
     std::cerr << "Initializing module: " << namePrefix << std::endl;
 }
 
+static int dumpMLIR(std::vector<std::unique_ptr<FunctionAST>> &functions) {
+    mlir::MLIRContext context;
+    // Load our Dialect in this MLIR Context.
+    context.getOrLoadDialect<mlir::toy::ToyDialect>();
+
+    mlir::ModuleOp module = MLIRGenImpl(context).mlirGen(functions);
+    if (!module)
+        return 1;
+
+    module->dump();
+    return 0;
+}
+
 int main(int argc, char *argv[]) {
     if (!parseOptions(argc, argv)) {
         return 1;
@@ -107,7 +127,7 @@ int main(int argc, char *argv[]) {
 
     getNextToken();
     bool done = false;
-    std::unique_ptr<FunctionAST> currentFunctionAST = nullptr;
+    std::vector<std::unique_ptr<FunctionAST>> functions;
     while (!done) {
         switch (CurToken) {
             case tok_eof:
@@ -117,7 +137,7 @@ int main(int argc, char *argv[]) {
                 getNextToken();
                 break;
             case tok_def:
-                currentFunctionAST = HandleDefinition();
+                functions.push_back(HandleDefinition());
                 break;
             case tok_extern:
                 HandleExtern();
@@ -128,5 +148,5 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    return 0;
+    return dumpMLIR(functions);
 }

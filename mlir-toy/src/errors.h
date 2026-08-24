@@ -1,9 +1,9 @@
 //
-// Created by Sheldon Lobo on 2/15/26.
+// Created by Sheldon Lobo on 8/10/26.
 //
 
-#ifndef KALEIDOSCOPE_ERRORS_H
-#define KALEIDOSCOPE_ERRORS_H
+#ifndef MLIR_TOY_SRC_ERRORS_H
+#define MLIR_TOY_SRC_ERRORS_H
 
 #include <memory>
 
@@ -13,4 +13,4 @@ std::unique_ptr<ExprAST> LogError(const char *Str);
 std::unique_ptr<PrototypeAST> LogErrorP(const char *Str);
 llvm::Value *LogErrorV(const char *Str);
 
-#endif //KALEIDOSCOPE_ERRORS_H
+#endif // MLIR_TOY_SRC_ERRORS_H
