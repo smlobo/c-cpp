@@ -26,8 +26,9 @@ void NumberExprAST::print(int indent) {
     llvm::errs().changeColor(llvm::raw_ostream::GREEN, true);
     llvm::errs() << "NumberExprAST: ";
     llvm::errs().changeColor(llvm::raw_ostream::BRIGHT_GREEN, true);
-    llvm::errs() << std::format("{:.2f}", Val) << "\n";
+    llvm::errs() << std::format("{:.2f}", Val);
     llvm::errs().resetColor();
+    llvm::errs() << "\n";
 }
 
 VariableExprAST::VariableExprAST(const std::string &Name)
@@ -46,8 +47,9 @@ void VariableExprAST::print(int indent) {
     llvm::errs().changeColor(llvm::raw_ostream::BLUE, true);
     llvm::errs() << "VariableExprAST: ";
     llvm::errs().changeColor(llvm::raw_ostream::BRIGHT_BLUE, true);
-    llvm::errs() << Name << "\n";
+    llvm::errs() << Name;
     llvm::errs().resetColor();
+    llvm::errs() << "\n";
 }
 
 UnaryExprAST::UnaryExprAST(char Op, std::unique_ptr<ExprAST> Operand)
@@ -58,8 +60,9 @@ void UnaryExprAST::print(int indent) {
     llvm::errs().changeColor(llvm::raw_ostream::MAGENTA, true);
     llvm::errs() << "UnaryExprAST: ";
     llvm::errs().changeColor(llvm::raw_ostream::BRIGHT_MAGENTA, true);
-    llvm::errs() << Op << "\n";
+    llvm::errs() << Op;
     llvm::errs().resetColor();
+    llvm::errs() << "\n";
     Operand->print(indent + 2);
 }
 
@@ -85,8 +88,9 @@ void BinaryExprAST::print(int indent) {
     llvm::errs().changeColor(llvm::raw_ostream::MAGENTA, true);
     llvm::errs() << "BinaryExprAST: ";
     llvm::errs().changeColor(llvm::raw_ostream::BRIGHT_MAGENTA, true);
-    llvm::errs() << Op << "\n";
+    llvm::errs() << Op;
     llvm::errs().resetColor();
+    llvm::errs() << "\n";
     LHS->print(indent + 2);
     RHS->print(indent + 2);
 }
@@ -108,8 +112,9 @@ void CallExprAST::print(int indent) {
     llvm::errs().changeColor(llvm::raw_ostream::CYAN, true);
     llvm::errs() << "CallExprAST: ";
     llvm::errs().changeColor(llvm::raw_ostream::BRIGHT_CYAN, true);
-    llvm::errs() << Callee << "\n";
+    llvm::errs() << Callee;
     llvm::errs().resetColor();
+    llvm::errs() << "\n";
     for (const auto &Arg : Args) {
         Arg->print(indent + 2);
     }
@@ -153,8 +158,9 @@ void PrototypeAST::print(int indent) {
     for (const auto &Arg : Args) {
         llvm::errs() << Arg << ", ";
     }
-    llvm::errs() << ")\n";
+    llvm::errs() << ")";
     llvm::errs().resetColor();
+    llvm::errs() << "\n";
 }
 
 FunctionAST::FunctionAST(std::unique_ptr<PrototypeAST> Proto,
@@ -172,8 +178,9 @@ const std::vector<std::unique_ptr<ExprAST>> *FunctionAST::getBody() const {
 void FunctionAST::print(int indent) {
     llvm::errs().indent(indent);
     llvm::errs().changeColor(llvm::raw_ostream::YELLOW, true);
-    llvm::errs() << "FunctionAST:\n";
+    llvm::errs() << "FunctionAST:";
     llvm::errs().resetColor();
+    llvm::errs() << "\n";
     Proto->print(indent + 2);
     for (const auto &BodyExpr : BodyExprs) {
         BodyExpr->print(indent + 2);
@@ -188,8 +195,9 @@ IfExprAST::IfExprAST(std::unique_ptr<ExprAST> Cond, std::unique_ptr<ExprAST> The
 void IfExprAST::print(int indent) {
     llvm::errs().indent(indent);
     llvm::errs().changeColor(llvm::raw_ostream::RED, true);
-    llvm::errs() << "IfExprAST:\n";
+    llvm::errs() << "IfExprAST:";
     llvm::errs().resetColor();
+    llvm::errs() << "\n";
     Cond->print(indent + 2);
     Then->print(indent + 2);
     Else->print(indent + 2);
@@ -207,8 +215,9 @@ void ForExprAST::print(int indent) {
     llvm::errs().changeColor(llvm::raw_ostream::RED, true);
     llvm::errs() << "ForExprAST: ";
     llvm::errs().changeColor(llvm::raw_ostream::BRIGHT_RED, true);
-    llvm::errs() << VarName << "\n";
+    llvm::errs() << VarName;
     llvm::errs().resetColor();
+    llvm::errs() << "\n";
     Start->print(indent + 2);
     End->print(indent + 2);
     Stride->print(indent + 2);
@@ -237,8 +246,9 @@ ExprAST* ReturnExprAST::getExpr() const {
 void ReturnExprAST::print(int indent) {
     llvm::errs().indent(indent);
     llvm::errs().changeColor(llvm::raw_ostream::RED, true);
-    llvm::errs() << "ReturnExprAST:\n";
+    llvm::errs() << "ReturnExprAST:";
     llvm::errs().resetColor();
+    llvm::errs() << "\n";
     Return->print(indent + 2);
 }
 
@@ -248,12 +258,14 @@ LiteralExprAST::LiteralExprAST(std::vector<std::unique_ptr<ExprAST>> Elements)
 void LiteralExprAST::print(int indent) {
     llvm::errs().indent(indent);
     llvm::errs().changeColor(llvm::raw_ostream::CYAN, true);
-    llvm::errs() << "LiteralExprAST: <" << std::to_string(Elements.size()) << ">[\n";
+    llvm::errs() << "LiteralExprAST: <" << std::to_string(Elements.size()) << ">[";
     llvm::errs().resetColor();
+    llvm::errs() << "\n";
     for (const auto &Element : Elements)
         Element->print(indent + 2);
     llvm::errs().indent(indent);
     llvm::errs().changeColor(llvm::raw_ostream::CYAN, true);
-    llvm::errs() << "]\n";
+    llvm::errs() << "]";
     llvm::errs().resetColor();
+    llvm::errs() << "\n";
 }

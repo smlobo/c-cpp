@@ -1,0 +1,4 @@
+# toplevel LLVM IR & MLIR files only (typical testing)
+/*.ll
+/*.mlir
+

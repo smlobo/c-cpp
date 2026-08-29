@@ -15,6 +15,9 @@
 #include <vector>
 
 #include "mlir/IR/MLIRContext.h"
+#include "mlir/Pass/PassManager.h"
+#include "mlir/Transforms/Passes.h"
+#include "llvm/Support/raw_ostream.h"
 
 #include "ast.h"
 #include "Dialect.h"
@@ -44,7 +47,7 @@ static struct option long_options[] = {
 };
 
 static void printUsage(int argc, char *argv[]) {
-    std::cerr << "Usage: " << argv[0] << " [-O] [-<file.ks>" << std::endl;
+    std::cerr << "Usage: " << argv[0] << " [-O] [-a] [-d] <file.mt>" << std::endl;
 }
 
 static bool parseOptions(int argc, char* argv[]) {
@@ -95,11 +98,11 @@ static bool parseOptions(int argc, char* argv[]) {
     return true;
 }
 
-static void InitializeModuleAndManagers(std::string namePrefix) {
-    std::cerr << "Initializing module: " << namePrefix << std::endl;
-}
+static int dumpMLIR(std::string namePrefix,
+    std::vector<std::unique_ptr<FunctionAST>> &functions) {
+    const std::string outputFile = namePrefix + ".mlir";
+    std::cerr << "Writing module to: " << outputFile << std::endl;
 
-static int dumpMLIR(std::vector<std::unique_ptr<FunctionAST>> &functions) {
     mlir::MLIRContext context;
     // Load our Dialect in this MLIR Context.
     context.getOrLoadDialect<mlir::toy::ToyDialect>();
@@ -108,7 +111,28 @@ static int dumpMLIR(std::vector<std::unique_ptr<FunctionAST>> &functions) {
     if (!module)
         return 1;
 
-    module->dump();
+    if (optimize) {
+        mlir::PassManager pm(module->getName());
+        // Apply any generic pass manager command line options and run the pipeline.
+        // if (mlir::failed(mlir::applyPassManagerCLOptions(pm)))
+        //     return 4;
+
+        // Add a run of the canonicalizer to optimize the mlir module.
+        pm.addNestedPass<mlir::toy::FuncOp>(mlir::createCanonicalizerPass());
+        if (mlir::failed(pm.run(module)))
+            return 4;
+    }
+
+    std::error_code error;
+    llvm::raw_fd_ostream output(outputFile, error);
+    if (error) {
+        std::cerr << "Failed to open output file " << outputFile << ": "
+                  << error.message() << std::endl;
+        return 1;
+    }
+
+    module->print(output);
+    output << '\n';
     return 0;
 }
 
@@ -121,9 +145,6 @@ int main(int argc, char *argv[]) {
         std::cerr << "Failed to open file: " << argv[1] << std::endl;
         return 1;
     }
-
-    // Make the module, which holds all the code.
-    InitializeModuleAndManagers(fileName.stem());
 
     getNextToken();
     bool done = false;
@@ -148,5 +169,5 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    return dumpMLIR(functions);
+    return dumpMLIR(fileName.stem(), functions);
 }

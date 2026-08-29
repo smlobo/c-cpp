@@ -13,6 +13,7 @@ add_executable(mlir-toyc
         src/parser.cpp
         src/Dialect.cpp
         src/MLIRGen.cpp
+        src/SimplifyRedundantTranspose.cpp
 )
 
 target_compile_features(mlir-toyc PRIVATE cxx_std_20)
@@ -39,12 +40,22 @@ set(LLVM_LINK_LIBRARIES
         MLIRIR
         MLIRFunctionInterfaces
         MLIRCallInterfaces
+        MLIRPass
+        MLIRTransforms
+        MLIRTransformUtils
+        MLIRControlFlowInterfaces
+        MLIRRewrite
+        MLIRPDLToPDLInterp
+        MLIRPDLInterpDialect
+        MLIRPDLDialect
+        MLIRRewritePDL
+        MLIRAnalysis
+        MLIRSideEffectInterfaces
 )
 
-foreach(LLVMLIB ${LLVM_LINK_LIBRARIES})
-    set(LLVMLIB_NAME ${LLVMLIB})
+foreach(LLVMLIB_NAME ${LLVM_LINK_LIBRARIES})
     set(LLVMLIB_FULL_NAME lib${LLVMLIB_NAME}.a)
-    message(STATUS "LLVM Lib: ${LLVMLIB} -> ${LLVMLIB_NAME}")
+    message(STATUS "LLVM dependency: ${LLVMLIB_NAME}")
     add_library(${LLVMLIB_NAME} STATIC IMPORTED)
     set_target_properties(${LLVMLIB_NAME} PROPERTIES
             IMPORTED_LOCATION ${LLVM_AREA}/build/lib/${LLVMLIB_FULL_NAME}
@@ -58,3 +69,7 @@ target_link_libraries(mlir-toyc PRIVATE ZLIB::ZLIB)
 target_link_libraries(mlir-toyc PRIVATE zstd::libzstd_static)
 
 add_subdirectory(include)
+
+enable_testing()
+
+add_subdirectory(test)
