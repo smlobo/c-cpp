@@ -6,12 +6,12 @@ set_tests_properties(loop PROPERTIES
 )
 
 add_test(NAME loop-link
-        COMMAND llvm-link loop.ll ${CMAKE_CURRENT_SOURCE_DIR}/test.ll -o linked.bc
+        COMMAND ${LLVM_BUILD_BIN}/llvm-link loop.ll ${CMAKE_CURRENT_SOURCE_DIR}/test.ll -o linked.bc
 )
 set_tests_properties(loop-link PROPERTIES DEPENDS loop)
 
 add_test(NAME loop-execute
-        COMMAND lli linked.bc
+        COMMAND ${LLVM_BUILD_BIN}/lli linked.bc
 )
 set_tests_properties(loop-execute PROPERTIES
         DEPENDS loop-link

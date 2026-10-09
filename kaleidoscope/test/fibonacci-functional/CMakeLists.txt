@@ -6,12 +6,12 @@ set_tests_properties(fibonacci-functional PROPERTIES
 )
 
 add_test(NAME fibonacci-functional-link
-        COMMAND llvm-link fibonacci-functional.ll ${CMAKE_CURRENT_SOURCE_DIR}/test.ll -o linked.bc
+        COMMAND ${LLVM_BUILD_BIN}/llvm-link fibonacci-functional.ll ${CMAKE_CURRENT_SOURCE_DIR}/test.ll -o linked.bc
 )
 set_tests_properties(fibonacci-functional-link PROPERTIES DEPENDS fibonacci-functional)
 
 add_test(NAME fibonacci-functional-execute
-        COMMAND lli linked.bc
+        COMMAND ${LLVM_BUILD_BIN}/lli linked.bc
 )
 set_tests_properties(fibonacci-functional-execute PROPERTIES
         DEPENDS fibonacci-functional-link

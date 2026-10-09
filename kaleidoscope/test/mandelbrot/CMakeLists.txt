@@ -6,12 +6,12 @@ set_tests_properties(mandelbrot PROPERTIES
 )
 
 add_test(NAME mandelbrot-link
-        COMMAND llvm-link mandelbrot.ll ${CMAKE_CURRENT_SOURCE_DIR}/test.ll -o linked.bc
+        COMMAND ${LLVM_BUILD_BIN}/llvm-link mandelbrot.ll ${CMAKE_CURRENT_SOURCE_DIR}/test.ll -o linked.bc
 )
 set_tests_properties(mandelbrot-link PROPERTIES DEPENDS mandelbrot)
 
 add_test(NAME mandelbrot-execute
-        COMMAND lli linked.bc
+        COMMAND ${LLVM_BUILD_BIN}/lli linked.bc
 )
 set_tests_properties(mandelbrot-execute PROPERTIES
         DEPENDS mandelbrot-link

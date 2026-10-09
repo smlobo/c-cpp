@@ -6,12 +6,12 @@ set_tests_properties(extern PROPERTIES
 )
 
 add_test(NAME extern-link
-        COMMAND llvm-link external-function.ll ${CMAKE_CURRENT_SOURCE_DIR}/test.ll -o linked.bc
+        COMMAND ${LLVM_BUILD_BIN}/llvm-link external-function.ll ${CMAKE_CURRENT_SOURCE_DIR}/test.ll -o linked.bc
 )
 set_tests_properties(extern-link PROPERTIES DEPENDS extern)
 
 add_test(NAME extern-execute
-        COMMAND lli linked.bc
+        COMMAND ${LLVM_BUILD_BIN}/lli linked.bc
 )
 set_tests_properties(extern-execute PROPERTIES
         DEPENDS extern-link

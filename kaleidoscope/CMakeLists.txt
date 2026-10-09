@@ -21,6 +21,7 @@ set(LLVM_AREA $ENV{HOME}/repos/llvm-project)
 set(LLVM_INCLUDE_LLVM ${LLVM_AREA}/llvm/include/llvm)
 set(LLVM_INCLUDE ${LLVM_AREA}/llvm/include)
 set(LLVM_BUILD_INCLUDE ${LLVM_AREA}/build/include)
+set(LLVM_BUILD_BIN ${LLVM_AREA}/build/bin)
 
 target_include_directories(kaleidoscopec
         PRIVATE ${LLVM_INCLUDE_LLVM} ${LLVM_INCLUDE} ${LLVM_BUILD_INCLUDE})
@@ -54,6 +55,7 @@ set(LLVM_LINK_LIBRARIES
         ObjCARCOpts
         HipStdPar
         GlobalISel
+        SelectionDAG
         BitReader
         BitWriter
         Vectorize

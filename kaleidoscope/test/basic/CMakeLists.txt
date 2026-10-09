@@ -6,12 +6,12 @@ set_tests_properties(basic PROPERTIES
 )
 
 add_test(NAME basic-link
-        COMMAND llvm-link basic.ll ${CMAKE_CURRENT_SOURCE_DIR}/test.ll -o linked.bc
+        COMMAND ${LLVM_BUILD_BIN}/llvm-link basic.ll ${CMAKE_CURRENT_SOURCE_DIR}/test.ll -o linked.bc
 )
 set_tests_properties(basic-link PROPERTIES DEPENDS basic)
 
 add_test(NAME basic-execute
-        COMMAND lli linked.bc
+        COMMAND ${LLVM_BUILD_BIN}/lli linked.bc
 )
 set_tests_properties(basic-execute PROPERTIES
         DEPENDS basic-link

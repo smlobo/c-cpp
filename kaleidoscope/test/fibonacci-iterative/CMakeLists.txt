@@ -8,12 +8,12 @@ set_tests_properties(${TEST_NAME} PROPERTIES
 )
 
 add_test(NAME ${TEST_NAME}-link
-        COMMAND llvm-link fibonacci-iterative.ll ${CMAKE_CURRENT_SOURCE_DIR}/test.ll -o linked.bc
+        COMMAND ${LLVM_BUILD_BIN}/llvm-link fibonacci-iterative.ll ${CMAKE_CURRENT_SOURCE_DIR}/test.ll -o linked.bc
 )
 set_tests_properties(${TEST_NAME}-link PROPERTIES DEPENDS ${TEST_NAME})
 
 add_test(NAME ${TEST_NAME}-execute
-        COMMAND lli linked.bc
+        COMMAND ${LLVM_BUILD_BIN}/lli linked.bc
 )
 set_tests_properties(${TEST_NAME}-execute PROPERTIES
         DEPENDS ${TEST_NAME}-link
