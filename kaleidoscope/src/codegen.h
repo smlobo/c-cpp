@@ -8,11 +8,13 @@
 #include <map>
 
 #include <IR/IRBuilder.h>
+#include <Target/TargetMachine.h>
 
 extern std::unique_ptr<llvm::LLVMContext> TheContext;
 extern std::unique_ptr<llvm::IRBuilder<>> Builder;
 extern std::unique_ptr<llvm::Module> TheModule;
 extern std::map<std::string, llvm::AllocaInst*> NamedValues;
+extern std::unique_ptr<llvm::TargetMachine> TheTargetMachine;
 
 extern void FunctionCodegen(std::unique_ptr<FunctionAST> FnAST);
 

@@ -9,6 +9,7 @@
 
 #include <IR/Module.h>
 #include <IR/PassManager.h>
+#include <IR/LegacyPassManager.h>
 
 #include <Transforms/InstCombine/InstCombine.h>
 #include <Transforms/Scalar/Reassociate.h>
@@ -17,6 +18,14 @@
 #include <Transforms/Utils/Mem2Reg.h>
 
 #include <Passes/PassBuilder.h>
+
+#include "MC/TargetRegistry.h"
+#include "Support/FileSystem.h"
+#include "Support/TargetSelect.h"
+#include "Support/raw_ostream.h"
+#include "Target/TargetMachine.h"
+#include "Target/TargetOptions.h"
+#include "TargetParser/Host.h"
 
 #include "ast.h"
 #include "codegen.h"
@@ -45,7 +54,7 @@ static struct option long_options[] = {
 };
 
 static void printUsage(int argc, char *argv[]) {
-    std::cerr << "Usage: " << argv[0] << " [-O] [-<file.ks>" << std::endl;
+    std::cerr << "Usage: " << argv[0] << " [-hOad] <file.ks>" << std::endl;
 }
 
 static bool parseOptions(int argc, char* argv[]) {
@@ -96,7 +105,7 @@ static bool parseOptions(int argc, char* argv[]) {
     return true;
 }
 
-static void InitializeModuleAndManagers(std::string namePrefix) {
+static void InitializeModuleAndManagers(const std::string& namePrefix) {
     std::cerr << "Initializing module: " << namePrefix << std::endl;
 
     // Open a new context and module.
@@ -136,6 +145,67 @@ static void InitializeModuleAndManagers(std::string namePrefix) {
     PB.crossRegisterProxies(*TheLAM, *TheFAM, *TheCGAM, *TheMAM);
 }
 
+static bool InitializeTarget() {
+    // Initialize the host target used to emit the object file.
+    if (llvm::InitializeNativeTarget() ||
+        llvm::InitializeNativeTargetAsmPrinter()) {
+        llvm::errs() << "Native target is unavailable\n";
+        return false;
+    }
+
+    auto TargetTriple = llvm::sys::getDefaultTargetTriple();
+    TheModule->setTargetTriple(llvm::Triple(TargetTriple));
+
+    std::string Error;
+    auto Target = llvm::TargetRegistry::lookupTarget(TheModule->getTargetTriple(), Error);
+
+    // Print an error and exit if we couldn't find the requested target.
+    // This generally occurs if we've forgotten to initialise the
+    // TargetRegistry or we have a bogus target triple.
+    if (!Target) {
+        llvm::errs() << Error;
+        return false;
+    }
+
+    auto CPU = "generic";
+    auto Features = "";
+
+    llvm::TargetOptions opt;
+    TheTargetMachine = std::unique_ptr<llvm::TargetMachine>(Target->createTargetMachine(
+        llvm::Triple(TargetTriple), CPU, Features, opt, llvm::Reloc::PIC_));
+
+    TheModule->setDataLayout(
+        TheTargetMachine->getTargetTriple().computeDataLayout());
+
+    return true;
+}
+
+static bool WriteAssembly(const std::string& namePrefix) {
+    const auto Filename = namePrefix + ".s";
+    std::error_code EC;
+    llvm::raw_fd_ostream dest(Filename, EC, llvm::sys::fs::OF_None);
+
+    if (EC) {
+        llvm::errs() << "Could not open file: " << EC.message();
+        return false;
+    }
+
+    llvm::legacy::PassManager pass;
+    auto FileType = llvm::CodeGenFileType::AssemblyFile;
+
+    if (TheTargetMachine->addPassesToEmitFile(pass, dest, nullptr, FileType)) {
+        llvm::errs() << "TheTargetMachine can't emit a file of this type";
+        return false;
+    }
+
+    pass.run(*TheModule);
+    dest.flush();
+
+    llvm::outs() << "Wrote assembly file: " << Filename << "\n";
+
+    return true;
+}
+
 int main(int argc, char *argv[]) {
     if (!parseOptions(argc, argv)) {
         return 1;
@@ -148,6 +218,11 @@ int main(int argc, char *argv[]) {
 
     // Make the module, which holds all the code.
     InitializeModuleAndManagers(fileName.stem());
+
+    // Initialize the target
+    if (!InitializeTarget()) {
+        return 1;
+    }
 
     getNextToken();
     bool done = false;
@@ -186,6 +261,11 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     TheModule->print(outputFile, nullptr);
+
+    // Additionally write the assembly file
+    if (!WriteAssembly(fileName.stem())) {
+        return 1;
+    }
 
     return 0;
 }

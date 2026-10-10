@@ -12,11 +12,13 @@
 
 #include "IR/IRBuilder.h"
 #include "IR/Module.h"
+#include <Target/TargetMachine.h>
 
 std::unique_ptr<llvm::LLVMContext> TheContext;
 std::unique_ptr<llvm::IRBuilder<>> Builder;
 std::unique_ptr<llvm::Module> TheModule;
 std::map<std::string, llvm::AllocaInst*> NamedValues;
+std::unique_ptr<llvm::TargetMachine> TheTargetMachine;
 
 //===----------------------------------------------------------------------===//
 // Codegen

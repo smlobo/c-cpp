@@ -26,65 +26,15 @@ set(LLVM_BUILD_BIN ${LLVM_AREA}/build/bin)
 target_include_directories(kaleidoscopec
         PRIVATE ${LLVM_INCLUDE_LLVM} ${LLVM_INCLUDE} ${LLVM_BUILD_INCLUDE})
 
-set(LLVM_LINK_LIBRARIES
-        Core
-        Support
-        Demangle
-        BinaryFormat
-        Remarks
-        BitstreamReader
-        TargetParser
-        Passes
-        CodeGen
-        CGData
-        CodeGenTypes
-        Analysis
-        TransformUtils
-        MC
-        DebugInfoDWARFLowLevel
-        Object
-        Target
-        ipo
-        ProfileData
-        DebugInfoDWARF
-        ScalarOpts
-        Linker
-        Instrumentation
-        TextAPI
-        FrontendHLSL
-        ObjCARCOpts
-        HipStdPar
-        GlobalISel
-        SelectionDAG
-        BitReader
-        BitWriter
-        Vectorize
-        SandboxIR
-        AggressiveInstCombine
-        Coroutines
-        FrontendOpenMP
-        IRReader
-        MCParser
-        IRPrinter
-        InstCombine
-        CFGuard
-        AsmParser
-        FrontendAtomic
-        FrontendOffloading
-        ObjectYAML
+execute_process(
+        COMMAND ${LLVM_BUILD_BIN}/llvm-config --libnames native passes
+        OUTPUT_VARIABLE LLVM_LIBNAMES
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        COMMAND_ERROR_IS_FATAL ANY
 )
-
-foreach(LLVMLIB ${LLVM_LINK_LIBRARIES})
-    set(LLVMLIB_NAME LLVM${LLVMLIB})
-    set(LLVMLIB_FULL_NAME lib${LLVMLIB_NAME}.a)
-    message(STATUS "LLVM Lib: ${LLVMLIB} -> ${LLVMLIB_NAME}")
-    add_library(${LLVMLIB_NAME} STATIC IMPORTED)
-    set_target_properties(${LLVMLIB_NAME} PROPERTIES
-            IMPORTED_LOCATION ${LLVM_AREA}/build/lib/${LLVMLIB_FULL_NAME}
-    )
-    target_link_libraries(kaleidoscopec
-            PRIVATE ${LLVMLIB_NAME}
-    )
+separate_arguments(LLVM_LIBNAMES NATIVE_COMMAND "${LLVM_LIBNAMES}")
+foreach(LLVMLIB ${LLVM_LIBNAMES})
+    target_link_libraries(kaleidoscopec PRIVATE ${LLVM_AREA}/build/lib/${LLVMLIB})
 endforeach()
 
 target_link_libraries(kaleidoscopec PRIVATE ZLIB::ZLIB)

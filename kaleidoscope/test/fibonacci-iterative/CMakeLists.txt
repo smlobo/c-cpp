@@ -1,24 +1,7 @@
-set(TEST_NAME "fibonacci-iterative")
-
-add_test(NAME ${TEST_NAME}
-        COMMAND $<TARGET_FILE:kaleidoscopec> ${CMAKE_CURRENT_SOURCE_DIR}/fibonacci-iterative.ks
-)
-set_tests_properties(${TEST_NAME} PROPERTIES
-        FAIL_REGULAR_EXPRESSION "Error"
-)
-
-add_test(NAME ${TEST_NAME}-link
-        COMMAND ${LLVM_BUILD_BIN}/llvm-link fibonacci-iterative.ll ${CMAKE_CURRENT_SOURCE_DIR}/test.ll -o linked.bc
-)
-set_tests_properties(${TEST_NAME}-link PROPERTIES DEPENDS ${TEST_NAME})
-
-add_test(NAME ${TEST_NAME}-execute
-        COMMAND ${LLVM_BUILD_BIN}/lli linked.bc
-)
-set_tests_properties(${TEST_NAME}-execute PROPERTIES
-        DEPENDS ${TEST_NAME}-link
-        PASS_REGULAR_EXPRESSION "fibonacci iterative \\[3] = 2"
-        PASS_REGULAR_EXPRESSION "fibonacci iterative \\[4] = 3"
-        PASS_REGULAR_EXPRESSION "fibonacci iterative \\[5] = 5"
-        PASS_REGULAR_EXPRESSION "fibonacci iterative \\[6] = 8"
+add_kaleidoscope_test(fibonacci-iterative
+        EXPECT
+        "fibonacci iterative \\[3] = 2"
+        "fibonacci iterative \\[4] = 3"
+        "fibonacci iterative \\[5] = 5"
+        "fibonacci iterative \\[6] = 8"
 )
