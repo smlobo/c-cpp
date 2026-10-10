@@ -15,3 +15,8 @@ cmake --build --preset conan-debug
 ```
 ./build-debug/mlir-toyc ch1.mt -d -a
 ```
+
+## Test
+```
+ctest --test-dir build-debug
+```

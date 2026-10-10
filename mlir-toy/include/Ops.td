@@ -150,6 +150,16 @@ def FuncOp : Toy_Op<"func", [
     // FunctionOpInterface Methods
     //===------------------------------------------------------------------===//
 
+    StringAttr getNameAttr() { return getSymNameAttr(); }
+
+    SymbolTable::Visibility getVisibility() {
+      return SymbolTable::getSymbolVisibility(getOperation());
+    }
+
+    void setVisibility(SymbolTable::Visibility visibility) {
+      SymbolTable::setSymbolVisibility(getOperation(), visibility);
+    }
+
     /// Returns the argument types of this function.
     ArrayRef<Type> getArgumentTypes() { return getFunctionType().getInputs(); }
 
