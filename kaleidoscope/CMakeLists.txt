@@ -4,6 +4,7 @@ project(kaleidoscope VERSION 1.0 LANGUAGES CXX)
 
 find_package(ZLIB REQUIRED CONFIG)
 find_package(zstd REQUIRED CONFIG)
+find_package(LibLZMA REQUIRED)
 
 add_executable(kaleidoscopec
         src/lexer.cpp
@@ -39,6 +40,7 @@ endforeach()
 
 target_link_libraries(kaleidoscopec PRIVATE ZLIB::ZLIB)
 target_link_libraries(kaleidoscopec PRIVATE zstd::libzstd_static)
+target_link_libraries(kaleidoscopec PRIVATE LibLZMA::LibLZMA)
 
 enable_testing()
 
