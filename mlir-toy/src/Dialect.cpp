@@ -315,6 +315,24 @@ llvm::LogicalResult TransposeOp::verify() {
 }
 
 //===----------------------------------------------------------------------===//
+// ReshapeOp
+//===----------------------------------------------------------------------===//
+
+llvm::LogicalResult ReshapeOp::verify() {
+  auto inputType = llvm::dyn_cast<RankedTensorType>(getOperand().getType());
+  auto resultType = llvm::dyn_cast<RankedTensorType>(getType());
+  if (!inputType || !resultType || !inputType.hasStaticShape() || !resultType.hasStaticShape())
+    return mlir::success();
+
+  if (inputType.getNumElements() != resultType.getNumElements()) {
+    return emitError()
+           << "reshape expected result shape does not match";
+  }
+
+  return mlir::success();
+}
+
+//===----------------------------------------------------------------------===//
 // TableGen'd op method definitions
 //===----------------------------------------------------------------------===//
 

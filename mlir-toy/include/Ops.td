@@ -275,6 +275,9 @@ def ReshapeOp : Toy_Op<"reshape"> {
   let assemblyFormat = [{
     `(` $input `:` type($input) `)` attr-dict `to` type(results)
   }];
+
+  // Invoke a static verify method to verify this reshape operation.
+  let hasVerifier = 1;
 }
 
 //===----------------------------------------------------------------------===//
