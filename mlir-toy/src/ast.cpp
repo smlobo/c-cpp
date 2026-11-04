@@ -21,6 +21,10 @@ ExprAST::ExprASTKind ExprAST::getKind() const {
 
 NumberExprAST::NumberExprAST(double Val) : ExprAST(Expr_Num), Val(Val) {}
 
+double NumberExprAST::getValue() const {
+    return Val;
+}
+
 void NumberExprAST::print(int indent) {
     llvm::errs().indent(indent);
     llvm::errs().changeColor(llvm::raw_ostream::GREEN, true);
@@ -38,7 +42,7 @@ VariableExprAST::VariableExprAST(const std::string &Name,
         std::vector<unsigned> Shape)
     : ExprAST(Expr_Var), Name(Name), Shape(std::move(Shape)) {}
 
-std::string VariableExprAST::getName() const {
+const std::string &VariableExprAST::getName() const {
     return Name;
 }
 
@@ -224,13 +228,21 @@ void ForExprAST::print(int indent) {
     Body->print(indent + 2);
 }
 
-VarDeclExprAST::VarDeclExprAST(std::unique_ptr<ExprAST> Var)
-    : ExprAST(Expr_VarDecl), Var(std::move(Var)) {}
+VarDeclExprAST::VarDeclExprAST(std::unique_ptr<VariableExprAST> Var, std::unique_ptr<ExprAST> InitValue)
+    : ExprAST(Expr_VarDecl), Var(std::move(Var)), InitValue(std::move(InitValue)) {}
+
+const std::string &VarDeclExprAST::getName() const {
+    return Var->getName();
+}
+
+ExprAST* VarDeclExprAST::getInitVal() const {
+    return InitValue.get();
+}
 
 void VarDeclExprAST::print(int indent) {
     llvm::errs().indent(indent);
     llvm::errs().changeColor(llvm::raw_ostream::RED, true);
-    llvm::errs() << "VarExprAST: ";
+    llvm::errs() << "VarDeclExprAST: ";
     llvm::errs().resetColor();
     llvm::errs() << "\n";
     Var->print(indent + 2);
@@ -254,6 +266,10 @@ void ReturnExprAST::print(int indent) {
 
 LiteralExprAST::LiteralExprAST(std::vector<std::unique_ptr<ExprAST>> Elements)
     : ExprAST(Expr_Literal), Elements(std::move(Elements)) {}
+
+const std::vector<std::unique_ptr<ExprAST>> &LiteralExprAST::getElements() const {
+    return Elements;
+}
 
 void LiteralExprAST::print(int indent) {
     llvm::errs().indent(indent);

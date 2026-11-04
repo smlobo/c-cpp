@@ -52,13 +52,19 @@ private:
     /// initializer and record the value in the symbol table before returning it.
     /// Future expressions will be able to reference this variable through symbol
     /// table lookup.
-    // mlir::Value mlirGen(VarDeclExprAST &vardecl);
+    mlir::Value mlirGen(VarDeclExprAST &vardecl);
 
     /// Emit a return operation. This will return failure if any generation fails.
     llvm::LogicalResult mlirGen(ReturnExprAST &ret);
 
     /// Dispatch codegen for the right expression subclass using RTTI.
     mlir::Value mlirGen(ExprAST &expr);
+
+    /// Emit a number literal
+    mlir::Value mlirGen(NumberExprAST &expr);
+
+    /// Emit a vector literal
+    mlir::Value mlirGen(LiteralExprAST &expr);
 
     /// Emit a binary operation
     mlir::Value mlirGen(BinaryExprAST &binop);

@@ -4,9 +4,12 @@
 
 #include "MLIRGen.h"
 
+#include <functional>
+
 #include <llvm/IR/Intrinsics.h>
 
 #include "mlir/IR/Builders.h"
+#include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Verifier.h"
 
 #include "Dialect.h"
@@ -99,11 +102,10 @@ llvm::LogicalResult MLIRGenImpl::mlirGen(const std::vector<std::unique_ptr<ExprA
     for (const auto &bodyExpr: blockAST) {
         // Specific handling for variable declarations, return statement. These
         // can only appear in block list and not in nested expressions.
-        // if (bodyExpr->getKind() == ExprAST::Expr_VarDecl) {
-        //     if (!mlirGen(*static_cast<VarDeclExprAST*>(bodyExpr.get())))
-        //         return mlir::failure();
-        // }
-        if (bodyExpr->getKind() == ExprAST::Expr_Return) {
+        if (bodyExpr->getKind() == ExprAST::Expr_VarDecl) {
+            if (!mlirGen(*static_cast<VarDeclExprAST *>(bodyExpr.get())))
+                return mlir::failure();
+        } else if (bodyExpr->getKind() == ExprAST::Expr_Return) {
             if (mlir::failed(mlirGen(*static_cast<ReturnExprAST*>(bodyExpr.get()))))
                 return mlir::failure();
         }
@@ -115,31 +117,30 @@ llvm::LogicalResult MLIRGenImpl::mlirGen(const std::vector<std::unique_ptr<ExprA
 /// initializer and record the value in the symbol table before returning it.
 /// Future expressions will be able to reference this variable through symbol
 /// table lookup.
-// mlir::Value MLIRGenImpl::mlirGen(VarDeclExprAST &vardecl) {
-//     auto *init = vardecl.getInitVal();
-//     if (!init) {
-//         emitError(loc(vardecl.loc()),
-//                   "missing initializer in variable declaration");
-//         return nullptr;
-//     }
-//
-//     mlir::Value value = mlirGen(*init);
-//     if (!value)
-//         return nullptr;
-//
-//     // We have the initializer value, but in case the variable was declared
-//     // with specific shape, we emit a "reshape" operation. It will get
-//     // optimized out later as needed.
-//     if (!vardecl.getType().shape.empty()) {
-//         value = ReshapeOp::create(builder, loc(vardecl.loc()),
-//                                   getType(vardecl.getType()), value);
-//     }
-//
-//     // Register the value in the symbol table.
-//     if (failed(declare(vardecl.getName(), value)))
-//         return nullptr;
-//     return value;
-// }
+mlir::Value MLIRGenImpl::mlirGen(VarDeclExprAST &vardecl) {
+    auto *init = vardecl.getInitVal();
+    if (!init) {
+        mlir::emitError(loc, "missing initializer in variable declaration");
+        return nullptr;
+    }
+
+    mlir::Value value = mlirGen(*init);
+    if (!value)
+        return nullptr;
+
+    // We have the initializer value, but in case the variable was declared
+    // with specific shape, we emit a "reshape" operation. It will get
+    // optimized out later as needed.
+    // if (!vardecl.getType().shape.empty()) {
+    //     value = mlir::toy::ReshapeOp::create(builder, loc,
+    //                                          llvm::Intrinsic::getType(vardecl.getType()), value);
+    // }
+
+    // Register the value in the symbol table.
+    if (failed(declare(vardecl.getName(), value)))
+        return nullptr;
+    return value;
+}
 
 /// Emit a return operation. This will return failure if any generation fails.
 llvm::LogicalResult MLIRGenImpl::mlirGen(ReturnExprAST &ret) {
@@ -259,4 +260,55 @@ mlir::Value MLIRGenImpl::mlirGen(VariableExprAST &expr) {
     emitError(loc, "error: unknown variable '")
         << expr.getName() << "'";
     return nullptr;
+}
+
+mlir::Value MLIRGenImpl::mlirGen(LiteralExprAST &expr) {
+    llvm::SmallVector<double, 8> values;
+    llvm::SmallVector<int64_t, 4> shape;
+
+    // Flatten the literal while inferring its dimensions. Every nested row
+    // must have the same shape so the result can be represented as a tensor.
+    std::function<bool(ExprAST &, llvm::SmallVectorImpl<int64_t> &)> flatten =
+        [&](ExprAST &node, llvm::SmallVectorImpl<int64_t> &nodeShape) -> bool {
+        if (node.getKind() == ExprAST::Expr_Num) {
+            values.push_back(static_cast<NumberExprAST &>(node).getValue());
+            nodeShape.clear();
+            return true;
+        }
+        if (node.getKind() != ExprAST::Expr_Literal)
+            return false;
+
+        auto &elements = static_cast<LiteralExprAST &>(node).getElements();
+        llvm::SmallVector<int64_t, 4> childShape;
+        bool first = true;
+        for (const auto &element : elements) {
+            llvm::SmallVector<int64_t, 4> currentShape;
+            if (!flatten(*element, currentShape))
+                return false;
+            if (first) {
+                childShape = std::move(currentShape);
+                first = false;
+            } else if (currentShape != childShape) {
+                return false; // Ragged literal.
+            }
+        }
+        nodeShape.clear();
+        nodeShape.push_back(static_cast<int64_t>(elements.size()));
+        nodeShape.append(childShape.begin(), childShape.end());
+        return true;
+    };
+
+    if (!flatten(expr, shape)) {
+        mlir::emitError(loc,
+                        "tensor literal must contain numbers and have a rectangular shape");
+        return nullptr;
+    }
+
+    auto type = mlir::RankedTensorType::get(shape, builder.getF64Type());
+    auto value = mlir::DenseElementsAttr::get(type, llvm::ArrayRef<double>(values));
+    return mlir::toy::ConstantOp::create(builder, loc, value);
+}
+
+mlir::Value MLIRGenImpl::mlirGen(NumberExprAST &expr) {
+    return mlir::toy::ConstantOp::create(builder, loc, expr.getValue());
 }

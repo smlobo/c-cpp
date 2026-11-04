@@ -52,6 +52,8 @@ class NumberExprAST : public ExprAST {
 public:
     NumberExprAST(double Val);
 
+    double getValue() const;
+
     void print(int indent) override;
 };
 
@@ -64,7 +66,7 @@ public:
     VariableExprAST(const std::string &Name);
     VariableExprAST(const std::string &Name, std::vector<unsigned> Shape);
 
-    std::string getName() const;
+    const std::string &getName() const;
 
     void print(int indent) override;
 };
@@ -172,10 +174,14 @@ public:
 
 /// VarExprAST - Expression class for var/in
 class VarDeclExprAST : public ExprAST {
-    std::unique_ptr<ExprAST> Var;
+    std::unique_ptr<VariableExprAST> Var;
+    std::unique_ptr<ExprAST> InitValue;
 
 public:
-    VarDeclExprAST(std::unique_ptr<ExprAST> Var);
+    VarDeclExprAST(std::unique_ptr<VariableExprAST> Var, std::unique_ptr<ExprAST> InitValue);
+
+    const std::string &getName() const;
+    ExprAST* getInitVal() const;
 
     void print(int indent) override;
 };
@@ -198,6 +204,8 @@ class LiteralExprAST : public ExprAST {
 
 public:
     LiteralExprAST(std::vector<std::unique_ptr<ExprAST>> Elements);
+
+    const std::vector<std::unique_ptr<ExprAST>> &getElements() const;
 
     void print(int indent) override;
 };

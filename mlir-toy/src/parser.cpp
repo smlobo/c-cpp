@@ -224,7 +224,21 @@ static std::unique_ptr<ExprAST> ParseVarExpr() {
     if (!expr)
         return nullptr;
 
-    return std::make_unique<VarDeclExprAST>(std::move(expr));
+    if (expr->getKind() != ExprAST::Expr_BinaryOp)
+        return LogError("expected binary variable expression");
+    auto *binaryExprPtr = static_cast<BinaryExprAST *>(expr.release());
+
+    if (binaryExprPtr->getOp() != '=')
+        return LogError("variable decl binary op is not =");
+
+    if (binaryExprPtr->getLHS()->getKind() != ExprAST::Expr_Var)
+        return LogError("expected binary expression LHS as variable expression");
+    auto *varExprPtr = static_cast<VariableExprAST *>(binaryExprPtr->getLHS());
+    std::unique_ptr<VariableExprAST> varExpr(varExprPtr);
+
+    std::unique_ptr<ExprAST> initExpr(binaryExprPtr->getRHS());
+
+    return std::make_unique<VarDeclExprAST>(std::move(varExpr), std::move(initExpr));
 }
 
 /// returnexpr ::= 'return' expression
