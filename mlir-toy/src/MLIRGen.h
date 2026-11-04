@@ -57,8 +57,8 @@ private:
     /// Emit a return operation. This will return failure if any generation fails.
     llvm::LogicalResult mlirGen(ReturnExprAST &ret);
 
-    /// Dispatch codegen for the right expression subclass using RTTI.
-    mlir::Value mlirGen(ExprAST &expr);
+    /// Emit a print statement.
+    llvm::LogicalResult mlirGen(PrintExprAST &print);
 
     /// Emit a number literal
     mlir::Value mlirGen(NumberExprAST &expr);
@@ -77,6 +77,9 @@ private:
     /// expected to have been declared and so should have a value in the symbol
     /// table, otherwise emit an error and return nullptr.
     mlir::Value mlirGen(VariableExprAST &expr);
+
+    /// Dispatch codegen for the right expression subclass using RTTI.
+    mlir::Value mlirGen(ExprAST &expr);
 
 public:
     MLIRGenImpl(mlir::MLIRContext &context);

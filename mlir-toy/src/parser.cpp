@@ -123,6 +123,13 @@ static std::unique_ptr<ExprAST> ParseIdentifierExpr() {
     // Eat the ')'.
     getNextToken();
 
+    // print() call
+    if (IdName == "print") {
+        if (Args.size() != 1)
+            return LogError("print expects exactly one argument");
+        return std::make_unique<PrintExprAST>(std::move(Args.front()));
+    }
+
     return std::make_unique<CallExprAST>(IdName, std::move(Args));
 }
 

@@ -128,6 +128,19 @@ void CallExprAST::print(int indent) {
     }
 }
 
+PrintExprAST::PrintExprAST(std::unique_ptr<ExprAST> Value)
+    : ExprAST(Expr_Print), Value(std::move(Value)) {}
+
+ExprAST *PrintExprAST::getValue() const { return Value.get(); }
+
+void PrintExprAST::print(int indent) {
+    llvm::errs().indent(indent);
+    llvm::errs().changeColor(llvm::raw_ostream::RED, true);
+    llvm::errs() << "PrintExprAST:\n";
+    llvm::errs().resetColor();
+    Value->print(indent + 2);
+}
+
 PrototypeAST::PrototypeAST(const std::string &Name, std::vector<std::string> Args,
         char Operator, unsigned Precedence)
     : Name(Name), Args(std::move(Args)), Operator(Operator),

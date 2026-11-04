@@ -112,6 +112,17 @@ public:
     void print(int indent) override;
 };
 
+/// PrintExprAST - A statement that prints a tensor expression.
+class PrintExprAST : public ExprAST {
+    std::unique_ptr<ExprAST> Value;
+
+public:
+    explicit PrintExprAST(std::unique_ptr<ExprAST> Value);
+
+    ExprAST *getValue() const;
+    void print(int indent) override;
+};
+
 /// PrototypeAST - This class represents the "prototype" for a function, which captures its name,
 /// and its argument names (thus implicitly the number of arguments the function takes).
 /// As well as if it is an operator

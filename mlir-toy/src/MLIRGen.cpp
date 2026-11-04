@@ -98,16 +98,30 @@ llvm::LogicalResult MLIRGenImpl::mlirGen(const std::vector<std::unique_ptr<ExprA
     llvm::ScopedHashTableScope<llvm::StringRef, mlir::Value> varScope(symbolTable);
 
     for (const auto &bodyExpr: blockAST) {
-        // Specific handling for variable declarations, return statement. These
-        // can only appear in block list and not in nested expressions.
+        // Specific handling for:
+        // * variable declarations
+        // * return statement
+        // * print statement
+        // These can only appear in block list and not in nested expressions.
         if (bodyExpr->getKind() == ExprAST::Expr_VarDecl) {
             if (!mlirGen(*static_cast<VarDeclExprAST *>(bodyExpr.get())))
+                return mlir::failure();
+        } else if (bodyExpr->getKind() == ExprAST::Expr_Print) {
+            if (mlir::failed(mlirGen(*static_cast<PrintExprAST *>(bodyExpr.get()))))
                 return mlir::failure();
         } else if (bodyExpr->getKind() == ExprAST::Expr_Return) {
             if (mlir::failed(mlirGen(*static_cast<ReturnExprAST*>(bodyExpr.get()))))
                 return mlir::failure();
         }
     }
+    return mlir::success();
+}
+
+llvm::LogicalResult MLIRGenImpl::mlirGen(PrintExprAST &print) {
+    mlir::Value value = mlirGen(*print.getValue());
+    if (!value)
+        return mlir::failure();
+    mlir::toy::PrintOp::create(builder, loc, value);
     return mlir::success();
 }
 
