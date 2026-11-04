@@ -2,4 +2,3 @@
 def transpose_transpose(a) {
   return transpose(transpose(a));
 }
-

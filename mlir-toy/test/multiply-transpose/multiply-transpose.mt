@@ -2,4 +2,3 @@
 def multiply_transpose(a, b) {
   return transpose(a) * transpose(b);
 }
-
