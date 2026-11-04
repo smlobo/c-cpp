@@ -6,8 +6,6 @@
 
 #include <functional>
 
-#include <llvm/IR/Intrinsics.h>
-
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Verifier.h"
@@ -131,10 +129,12 @@ mlir::Value MLIRGenImpl::mlirGen(VarDeclExprAST &vardecl) {
     // We have the initializer value, but in case the variable was declared
     // with specific shape, we emit a "reshape" operation. It will get
     // optimized out later as needed.
-    // if (!vardecl.getType().shape.empty()) {
-    //     value = mlir::toy::ReshapeOp::create(builder, loc,
-    //                                          llvm::Intrinsic::getType(vardecl.getType()), value);
-    // }
+    const auto &shape = vardecl.getShape();
+    if (!shape.empty()) {
+        llvm::SmallVector<int64_t, 4> dimensions(shape.begin(), shape.end());
+        auto type = mlir::RankedTensorType::get(dimensions, builder.getF64Type());
+        value = mlir::toy::ReshapeOp::create(builder, loc, type, value);
+    }
 
     // Register the value in the symbol table.
     if (failed(declare(vardecl.getName(), value)))

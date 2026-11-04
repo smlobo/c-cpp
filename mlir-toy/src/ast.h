@@ -67,6 +67,7 @@ public:
     VariableExprAST(const std::string &Name, std::vector<unsigned> Shape);
 
     const std::string &getName() const;
+    const std::vector<unsigned> &getShape() const;
 
     void print(int indent) override;
 };
@@ -181,6 +182,7 @@ public:
     VarDeclExprAST(std::unique_ptr<VariableExprAST> Var, std::unique_ptr<ExprAST> InitValue);
 
     const std::string &getName() const;
+    const std::vector<unsigned> &getShape() const;
     ExprAST* getInitVal() const;
 
     void print(int indent) override;

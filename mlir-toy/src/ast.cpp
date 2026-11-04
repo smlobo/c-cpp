@@ -46,6 +46,10 @@ const std::string &VariableExprAST::getName() const {
     return Name;
 }
 
+const std::vector<unsigned> &VariableExprAST::getShape() const {
+    return Shape;
+}
+
 void VariableExprAST::print(int indent) {
     llvm::errs().indent(indent);
     llvm::errs().changeColor(llvm::raw_ostream::BLUE, true);
@@ -233,6 +237,10 @@ VarDeclExprAST::VarDeclExprAST(std::unique_ptr<VariableExprAST> Var, std::unique
 
 const std::string &VarDeclExprAST::getName() const {
     return Var->getName();
+}
+
+const std::vector<unsigned> &VarDeclExprAST::getShape() const {
+    return Var->getShape();
 }
 
 ExprAST* VarDeclExprAST::getInitVal() const {
