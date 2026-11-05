@@ -14,8 +14,10 @@
 #define TOY_OPS
 
 include "mlir/IR/OpBase.td"
-include "mlir/Interfaces/FunctionInterfaces.td"
 include "mlir/IR/SymbolInterfaces.td"
+include "mlir/Interfaces/CallInterfaces.td"
+include "mlir/Interfaces/CastInterfaces.td"
+include "mlir/Interfaces/FunctionInterfaces.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 
 // Provide a definition of the 'toy' dialect in the ODS framework so that we
@@ -106,6 +108,30 @@ def AddOp : Toy_Op<"add"> {
   let builders = [
     OpBuilder<(ins "Value":$lhs, "Value":$rhs)>
   ];
+}
+
+//===----------------------------------------------------------------------===//
+// CastOp
+//===----------------------------------------------------------------------===//
+
+def CastOp : Toy_Op<"cast", [
+     DeclareOpInterfaceMethods<CastOpInterface>,
+     Pure,
+     SameOperandsAndResultShape
+  ]> {
+  let summary = "shape cast operation";
+  let description = [{
+    The "cast" operation converts a tensor from one type to an equivalent type
+    without changing any data elements. The source and destination types must
+    both be tensor types with the same element type. If both are ranked, then
+    shape is required to match. The operation is invalid if converting to a
+    mismatching constant dimension.
+  }];
+
+  let arguments = (ins F64Tensor:$input);
+  let results = (outs F64Tensor:$output);
+
+  let assemblyFormat = "$input attr-dict `:` type($input) `to` type($output)";
 }
 
 //===----------------------------------------------------------------------===//

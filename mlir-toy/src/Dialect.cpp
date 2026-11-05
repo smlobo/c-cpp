@@ -19,7 +19,6 @@
 #include "mlir/IR/OpImplementation.h"
 #include "mlir/IR/Operation.h"
 #include "mlir/IR/OperationSupport.h"
-#include "mlir/IR/Value.h"
 #include "mlir/Interfaces/FunctionImplementation.h"
 #include "mlir/Transforms/InliningUtils.h"
 #include "mlir/Support/LLVM.h"
@@ -40,6 +39,10 @@ using namespace mlir::toy;
 /// the necessary methods.
 struct ToyInlinerInterface : public mlir::DialectInlinerInterface {
   using DialectInlinerInterface::DialectInlinerInterface;
+
+  //===--------------------------------------------------------------------===//
+  // Analysis Hooks
+  //===--------------------------------------------------------------------===//
 
   /// This hook checks to see if the given callable operation is legal to inline
   /// into the given call. For Toy this hook can simply return true, as the Toy
@@ -62,6 +65,10 @@ struct ToyInlinerInterface : public mlir::DialectInlinerInterface {
     return true;
   }
 
+  //===--------------------------------------------------------------------===//
+  // Transformation Hooks
+  //===--------------------------------------------------------------------===//
+
   /// This hook is called when a terminator operation has been inlined. The only
   /// terminator that we have in the Toy dialect is the return
   /// operation(toy.return). We handle the return by replacing the values
@@ -75,6 +82,17 @@ struct ToyInlinerInterface : public mlir::DialectInlinerInterface {
     assert(returnOp.getNumOperands() == valuesToRepl.size());
     for (const auto &it : llvm::enumerate(returnOp.getOperands()))
       valuesToRepl[it.index()].replaceAllUsesWith(it.value());
+  }
+
+  /// Attempts to materialize a conversion for a type mismatch between a call
+  /// from this dialect, and a callable region. This method should generate an
+  /// operation that takes 'input' as the only operand, and produces a single
+  /// result of 'resultType'. If a conversion can not be generated, nullptr
+  /// should be returned.
+  Operation *materializeCallConversion(OpBuilder &builder, Value input,
+                                       Type resultType,
+                                       Location conversionLoc) const final {
+    return CastOp::create(builder, conversionLoc, resultType, input);
   }
 };
 
@@ -264,6 +282,29 @@ Operation::operand_range GenericCallOp::getArgOperands() { return getInputs(); }
 /// required by the call interface.
 MutableOperandRange GenericCallOp::getArgOperandsMutable() {
   return getInputsMutable();
+}
+
+//===----------------------------------------------------------------------===//
+// CastOp
+//===----------------------------------------------------------------------===//
+
+/// Infer the output shape of the CastOp, this is required by the shape
+/// inference interface.
+// void CastOp::inferShapes() { getResult().setType(getInput().getType()); }
+
+/// Returns true if the given set of input and result types are compatible with
+/// this cast operation. This is required by the `CastOpInterface` to verify
+/// this operation and provide other additional utilities.
+bool CastOp::areCastCompatible(TypeRange inputs, TypeRange outputs) {
+  if (inputs.size() != 1 || outputs.size() != 1)
+    return false;
+  // The inputs must be Tensors with the same element type.
+  TensorType input = llvm::dyn_cast<TensorType>(inputs.front());
+  TensorType output = llvm::dyn_cast<TensorType>(outputs.front());
+  if (!input || !output || input.getElementType() != output.getElementType())
+    return false;
+  // The shape is required to match if both types are ranked.
+  return !input.hasRank() || !output.hasRank() || input == output;
 }
 
 //===----------------------------------------------------------------------===//

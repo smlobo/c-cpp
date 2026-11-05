@@ -63,6 +63,7 @@ set(MLIR_LINK_LIBRARIES
         MLIRIR
         MLIRFunctionInterfaces
         MLIRCallInterfaces
+        MLIRCastInterfaces
         MLIRPass
         MLIRTransforms
         MLIRTransformUtils
