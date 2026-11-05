@@ -8,8 +8,13 @@ get_filename_component(output_directory "${OUTPUT}" DIRECTORY)
 file(MAKE_DIRECTORY "${output_directory}")
 file(REMOVE "${OUTPUT}")
 
+set(compiler_command "${COMPILER}" "${INPUT}" -a)
+if (OPTIMIZE)
+    list(APPEND compiler_command -O)
+endif()
+
 execute_process(
-    COMMAND "${COMPILER}" "${INPUT}" -O -a
+    COMMAND ${compiler_command}
     WORKING_DIRECTORY "${output_directory}"
     RESULT_VARIABLE compiler_result
 )

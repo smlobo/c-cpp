@@ -1,0 +1,8 @@
+# Redundant reshape & fold reshape into constant
+def reshape_optimizations() {
+    var a<2,1> = [1, 2];
+    var b<2,1> = a;
+    var c<2,1> = b;
+    print(c);
+    return;
+}

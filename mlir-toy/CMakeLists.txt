@@ -20,6 +20,9 @@ add_executable(mlir-toyc
         src/Dialect.cpp
         src/MLIRGen.cpp
         src/SimplifyRedundantTranspose.cpp
+        src/SimplifyRedundantReshape.cpp
+        src/FoldConstantReshape.cpp
+        src/ReshapeOpCanonicalization.cpp
 )
 
 target_compile_features(mlir-toyc PRIVATE cxx_std_20)
