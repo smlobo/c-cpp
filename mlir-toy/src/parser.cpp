@@ -253,6 +253,10 @@ static std::unique_ptr<ExprAST> ParseReturnExpr() {
     // eat return
     getNextToken();
 
+    // bare return
+    if (CurToken == ';')
+        return std::make_unique<ReturnExprAST>();
+
     auto returnExpr = ParseExpression();
     if (!returnExpr)
         return nullptr;

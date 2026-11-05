@@ -204,7 +204,7 @@ class ReturnExprAST : public ExprAST {
     std::unique_ptr<ExprAST> Return;
 
 public:
-    ReturnExprAST(std::unique_ptr<ExprAST> Return);
+    ReturnExprAST(std::unique_ptr<ExprAST> Return = nullptr);
 
     ExprAST* getExpr() const;
 

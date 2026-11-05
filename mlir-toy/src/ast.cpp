@@ -282,7 +282,8 @@ void ReturnExprAST::print(int indent) {
     llvm::errs() << "ReturnExprAST:";
     llvm::errs().resetColor();
     llvm::errs() << "\n";
-    Return->print(indent + 2);
+    if (Return)
+        Return->print(indent + 2);
 }
 
 LiteralExprAST::LiteralExprAST(std::vector<std::unique_ptr<ExprAST>> Elements)
