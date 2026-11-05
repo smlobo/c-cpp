@@ -117,6 +117,18 @@ static int dumpMLIR(std::string namePrefix,
         // if (mlir::failed(mlir::applyPassManagerCLOptions(pm)))
         //     return 4;
 
+        // Inline into main when it exists. Without a main function, the
+        // inliner can remove otherwise unreferenced private functions.
+        bool hasMain = false;
+        for (const auto &function : functions) {
+            if (function->getProto()->getName() == "main") {
+                hasMain = true;
+                break;
+            }
+        }
+        if (hasMain)
+            pm.addPass(mlir::createInlinerPass());
+
         // Add a run of the canonicalizer to optimize the mlir module.
         pm.addNestedPass<mlir::toy::FuncOp>(mlir::createCanonicalizerPass());
         if (mlir::failed(pm.run(module)))

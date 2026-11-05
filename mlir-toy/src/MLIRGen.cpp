@@ -79,6 +79,10 @@ mlir::toy::FuncOp MLIRGenImpl::mlirGen(const FunctionAST &funcAST) {
         return nullptr;
     }
 
+    // If this function isn't main, then set the visibility to private.
+    if (funcAST.getProto()->getName() != "main")
+        function.setPrivate();
+
     return function;
 }
 

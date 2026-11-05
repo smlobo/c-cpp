@@ -113,7 +113,8 @@ def AddOp : Toy_Op<"add"> {
 //===----------------------------------------------------------------------===//
 
 def FuncOp : Toy_Op<"func", [
-    FunctionOpInterface, IsolatedFromAbove
+    SymbolName, SymbolVisibility, FunctionOpInterface,
+    IsolatedFromAbove
   ]> {
   let summary = "user defined function operation";
   let description = [{
@@ -134,6 +135,7 @@ def FuncOp : Toy_Op<"func", [
 
   let arguments = (ins
     SymbolNameAttr:$sym_name,
+    OptionalAttr<StrAttr>:$sym_visibility,
     TypeAttrOf<FunctionType>:$function_type,
     OptionalAttr<DictArrayAttr>:$arg_attrs,
     OptionalAttr<DictArrayAttr>:$res_attrs
@@ -149,16 +151,6 @@ def FuncOp : Toy_Op<"func", [
     //===------------------------------------------------------------------===//
     // FunctionOpInterface Methods
     //===------------------------------------------------------------------===//
-
-    StringAttr getNameAttr() { return getSymNameAttr(); }
-
-    SymbolTable::Visibility getVisibility() {
-      return SymbolTable::getSymbolVisibility(getOperation());
-    }
-
-    void setVisibility(SymbolTable::Visibility visibility) {
-      SymbolTable::setSymbolVisibility(getOperation(), visibility);
-    }
 
     /// Returns the argument types of this function.
     ArrayRef<Type> getArgumentTypes() { return getFunctionType().getInputs(); }
@@ -177,7 +169,7 @@ def FuncOp : Toy_Op<"func", [
 // GenericCallOp
 //===----------------------------------------------------------------------===//
 
-def GenericCallOp : Toy_Op<"generic_call"> {
+def GenericCallOp : Toy_Op<"generic_call", [DeclareOpInterfaceMethods<CallOpInterface>]> {
   let summary = "generic call operation";
   let description = [{
     Generic calls represent calls to a user defined function that needs to
@@ -196,14 +188,19 @@ def GenericCallOp : Toy_Op<"generic_call"> {
 
   // The generic call operation takes a symbol reference attribute as the
   // callee, and inputs for the call.
-  let arguments = (ins FlatSymbolRefAttr:$callee, Variadic<F64Tensor>:$inputs);
+  let arguments = (ins
+    FlatSymbolRefAttr:$callee,
+    Variadic<F64Tensor>:$inputs,
+    OptionalAttr<DictArrayAttr>:$arg_attrs,
+    OptionalAttr<DictArrayAttr>:$res_attrs
+);
 
   // The generic call operation returns a single value of TensorType.
   let results = (outs F64Tensor);
 
   // Specialize assembly printing and parsing using a declarative format.
   let assemblyFormat = [{
-    $callee `(` $inputs `)` attr-dict `:` functional-type($inputs, results)
+    $callee `(` $inputs `)` attr-dict prop-dict `:` functional-type($inputs, results)
   }];
 
   // Add custom build methods for the generic call operation.
